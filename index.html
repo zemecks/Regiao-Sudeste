@@ -1,0 +1,2646 @@
+<!--Aqui está a versão evoluída em arquivo HTML único, agora com visual inspirado
+nos pacotes Blocky Characters (2.0) e City Kit Commercial (2.1) da Kenney,
+ambientada na escola CCM — Centro Cultural Manilha, e com a tela de seleção
+exibindo apenas Aluno e Aluna.
+
+Novidades e melhorias implementadas:
+
+  - Seleção exclusiva de Aluno e Aluna: removida qualquer referência a
+    homem/mulher, com pré-visualização 3D estilo Kenney Blocky Characters
+    (texturas procedurais com rosto expressivo, mochila, uniforme escolar do
+    CCM, escolha de cor de cabelo, tom de pele e cor do uniforme).
+  - Campus Inicial: Escola CCM — Centro Cultural Manilha: ponto de partida em um
+    prédio amplo estilo Kenney City Kit Commercial (marquise de entrada,
+    letreiro 3D CCM • Centro Cultural Manilha, pátio, bandeira, floreiras e um
+    Professor NPC interativo com óculos e crachá para dar boas-vindas e
+    instruções).
+  - Cenário 3D estilo City Kit Commercial: prédios comerciais, arranha-céus
+    espelhados, toldos coloridos, platibandas nos telhados com caixas de
+    ar-condicionado, quiosques/guarda-sóis na praia de Copacabana, hospital da
+    longevidade no ES, carros e ônibus circulando pelas rodovias e bússola
+    indicadora para a estação mais próxima.
+  - Conteúdo completo do capítulo nas 12 estações pelos 4 estados (SP, RJ, MG e
+    ES) + certificado de conclusão do CCM — Centro Cultural Manilha.
+
+Salve o código abaixo como missao-sudeste-ccm-3d.html e abra no navegador do PC
+ou celular:
+-->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>CCM Centro Cultural Manilha — Missão Sudeste 3D</title>
+  <style>
+    :root {
+      --bg-dark: rgba(15, 23, 42, 0.9);
+      --card-bg: rgba(18, 27, 50, 0.96);
+      --accent: #38bdf8;
+      --gold: #fbbf24;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #0f172a;
+      font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+      color: var(--text);
+      touch-action: none;
+    }
+
+    #game-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    /* Floating 3D Labels */
+    #labels-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 5;
+    }
+
+    .world-label {
+      position: absolute;
+      transform: translate(-50%, -100%);
+      background: rgba(15, 23, 42, 0.88);
+      border: 1.5px solid rgba(56, 189, 248, 0.65);
+      color: #fff;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+    }
+
+    .world-label.done {
+      border-color: rgba(34, 197, 94, 0.9);
+      background: rgba(20, 83, 45, 0.9);
+    }
+
+    .world-label.state-tag {
+      background: rgba(251, 191, 36, 0.94);
+      color: #0f172a;
+      border-color: #fef08a;
+      font-size: 12px;
+      padding: 4px 11px;
+      letter-spacing: 0.4px;
+    }
+
+    .world-label.school-tag {
+      background: linear-gradient(135deg, #0284c7, #1d4ed8);
+      color: #fff;
+      border: 2px solid #fde047;
+      font-size: 12px;
+      padding: 4px 12px;
+    }
+
+    /* Top HUD */
+    #hud {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: none;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .hud-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      pointer-events: auto;
+    }
+
+    .pill {
+      background: var(--bg-dark);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 13px;
+      padding: 6px 11px;
+      font-size: 12.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    }
+
+    .pill.school-pill {
+      border-color: rgba(251, 191, 36, 0.55);
+      color: #fde68a;
+    }
+
+    .btn-hud {
+      background: var(--bg-dark);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 7px 11px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: transform 0.12s, background 0.15s;
+    }
+
+    .btn-hud:active { transform: scale(0.95); }
+    .btn-hud:hover { background: rgba(30, 41, 59, 0.96); }
+
+    .state-badges { display: flex; gap: 4px; }
+    .s-badge {
+      padding: 2px 6px;
+      border-radius: 7px;
+      font-size: 11px;
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--muted);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .s-badge.complete {
+      background: rgba(34, 197, 94, 0.25);
+      color: #86efac;
+      border-color: #22c55e;
+    }
+
+    /* Location & Compass Bar */
+    #top-info-strip {
+      position: fixed;
+      top: 56px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      z-index: 18;
+      pointer-events: none;
+      width: min(94vw, 560px);
+    }
+
+    #zone-banner {
+      background: rgba(15, 23, 42, 0.84);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 5px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #bae6fd;
+      text-align: center;
+    }
+
+    #compass-pill {
+      background: rgba(15, 23, 42, 0.78);
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      padding: 3px 12px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #fde68a;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #compass-arrow {
+      display: inline-block;
+      font-size: 14px;
+      transition: transform 0.08s linear;
+    }
+
+    /* Interact Prompt */
+    #interact-btn {
+      position: fixed;
+      bottom: 98px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 25;
+      display: none;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      border: 2px solid #7dd3fc;
+      border-radius: 999px;
+      padding: 12px 22px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(2, 132, 199, 0.55);
+      animation: pulseBtn 1.4s infinite;
+    }
+
+    @keyframes pulseBtn {
+      0%, 100% { transform: translateX(-50%) scale(1); }
+      50% { transform: translateX(-50%) scale(1.06); }
+    }
+
+    #controls-hint {
+      position: fixed;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.76);
+      padding: 5px 14px;
+      border-radius: 999px;
+      font-size: 11px;
+      color: var(--muted);
+      z-index: 15;
+      display: none;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    /* Mobile Touch Controls */
+    #touch-controls {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 22;
+      display: none;
+    }
+
+    #joystick-zone {
+      position: absolute;
+      bottom: 22px;
+      left: 22px;
+      width: 128px;
+      height: 128px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.09);
+      border: 2px solid rgba(255, 255, 255, 0.24);
+      pointer-events: auto;
+      touch-action: none;
+    }
+
+    #joystick-knob {
+      position: absolute;
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #7dd3fc, #0284c7);
+      border: 2px solid #fff;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+      pointer-events: none;
+    }
+
+    #jump-touch-btn {
+      position: absolute;
+      bottom: 34px;
+      right: 24px;
+      width: 74px;
+      height: 74px;
+      border-radius: 50%;
+      background: rgba(251, 191, 36, 0.9);
+      border: 2px solid #fef08a;
+      color: #0f172a;
+      font-weight: 900;
+      font-size: 12px;
+      pointer-events: auto;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    #jump-touch-btn:active { transform: scale(0.92); }
+
+    /* Character Selection Screen */
+    #start-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 14px;
+      background: radial-gradient(circle at 60% 35%, rgba(14, 165, 233, 0.12), rgba(8, 13, 26, 0.8));
+      pointer-events: auto;
+    }
+
+    @media (min-width: 820px) {
+      #start-screen {
+        align-items: center;
+        justify-content: flex-start;
+        padding-left: 5vw;
+      }
+    }
+
+    .setup-card {
+      width: 100%;
+      max-width: 450px;
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(56, 189, 248, 0.38);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.68);
+      max-height: 92vh;
+      overflow-y: auto;
+    }
+
+    .school-header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(56, 189, 248, 0.2));
+      border: 1px solid rgba(251, 191, 36, 0.5);
+      color: #fde68a;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 5px 11px;
+      border-radius: 999px;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .setup-card h1 {
+      margin: 0 0 6px;
+      font-size: 24px;
+      line-height: 1.15;
+      background: linear-gradient(90deg, #fff, #7dd3fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .setup-card p.sub {
+      margin: 0 0 12px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .field-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #cbd5e1;
+      margin: 10px 0 6px;
+      display: block;
+    }
+
+    .role-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .role-btn {
+      padding: 12px 10px;
+      border-radius: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.15s;
+    }
+
+    .role-btn.active {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.22);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
+    }
+
+    .text-input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1.5px solid rgba(255, 255, 255, 0.18);
+      background: rgba(15, 23, 42, 0.85);
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    .text-input:focus { border-color: var(--accent); }
+
+    .color-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.32);
+      cursor: pointer;
+      transition: transform 0.12s;
+    }
+    .swatch.active {
+      border-color: #fff;
+      transform: scale(1.18);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.5);
+    }
+
+    .btn-primary {
+      width: 100%;
+      margin-top: 16px;
+      padding: 13px;
+      border-radius: 14px;
+      border: none;
+      background: linear-gradient(135deg, #0ea5e9, #2563eb);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(37, 99, 235, 0.45);
+      transition: transform 0.12s;
+    }
+    .btn-primary:active { transform: scale(0.98); }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: rgba(6, 10, 22, 0.78);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: var(--card-bg);
+      border: 1px solid rgba(56, 189, 248, 0.38);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.72);
+      position: relative;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .modal-close {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #fff;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      font-size: 18px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .study-box {
+      background: rgba(15, 23, 42, 0.78);
+      border-left: 4px solid var(--accent);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      font-size: 14px;
+      line-height: 1.55;
+      color: #e2e8f0;
+    }
+
+    .study-box ul { margin: 6px 0 0; padding-left: 18px; }
+    .study-box li { margin-bottom: 5px; }
+
+    .question-text {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.45;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+
+    .options-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .option-btn {
+      text-align: left;
+      padding: 11px 14px;
+      border-radius: 13px;
+      border: 1.5px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.05);
+      color: #f1f5f9;
+      font-size: 14px;
+      line-height: 1.35;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .option-btn:hover { background: rgba(56, 189, 248, 0.14); border-color: rgba(56, 189, 248, 0.5); }
+    .option-btn.correct { background: rgba(34, 197, 94, 0.25); border-color: var(--success); color: #bbf7d0; }
+    .option-btn.wrong { background: rgba(239, 68, 68, 0.24); border-color: var(--danger); color: #fecaca; }
+
+    .feedback-box {
+      margin-top: 12px;
+      padding: 11px 14px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      line-height: 1.45;
+      display: none;
+    }
+    .feedback-box.ok { background: rgba(34, 197, 94, 0.18); border: 1px solid var(--success); color: #dcfce7; }
+    .feedback-box.err { background: rgba(239, 68, 68, 0.18); border: 1px solid var(--danger); color: #fee2e2; }
+
+    .map-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 540px) { .map-grid { grid-template-columns: 1fr 1fr; } }
+
+    .map-item {
+      background: rgba(15, 23, 42, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      padding: 11px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .map-item.done { border-color: rgba(34, 197, 94, 0.55); }
+
+    .btn-mini {
+      padding: 7px 10px;
+      border-radius: 10px;
+      border: none;
+      background: #0284c7;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-mini.done { background: #15803d; }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      top: 108px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-10px);
+      background: rgba(15, 23, 42, 0.94);
+      border: 1px solid var(--gold);
+      color: #fde68a;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 70;
+      transition: opacity 0.25s, transform 0.25s;
+      text-align: center;
+      max-width: 90vw;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    #cdn-error {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: #0b1326;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="game-canvas"></canvas>
+  <div id="labels-layer"></div>
+
+  <!-- Top HUD -->
+  <div id="hud">
+    <div class="hud-group">
+      <div class="pill school-pill">🏫 CCM • Manilha</div>
+      <div class="pill" id="player-pill">🎓 <span id="hud-name">Aluno</span></div>
+      <div class="pill">⭐ <span id="hud-score">0</span> XP</div>
+      <div class="pill">📍 <span id="hud-progress">0/12</span></div>
+      <div class="pill state-badges">
+        <span class="s-badge" id="badge-SP">SP</span>
+        <span class="s-badge" id="badge-MG">MG</span>
+        <span class="s-badge" id="badge-RJ">RJ</span>
+        <span class="s-badge" id="badge-ES">ES</span>
+      </div>
+    </div>
+    <div class="hud-group">
+      <button class="btn-hud" id="btn-home" title="Voltar para a Escola CCM">🏫 CCM</button>
+      <button class="btn-hud" id="btn-map" title="Mapa e Teleporte">🗺️ Mapa</button>
+      <button class="btn-hud" id="btn-touch-toggle" title="Controles Touch">🎮</button>
+      <button class="btn-hud" id="btn-sound" title="Som">🔊</button>
+    </div>
+  </div>
+
+  <div id="top-info-strip">
+    <div id="zone-banner">🏫 Campus CCM Centro Cultural Manilha — Início da Expedição!</div>
+    <div id="compass-pill">
+      <span id="compass-arrow">🧭</span>
+      <span id="compass-text">Próxima estação: ...</span>
+    </div>
+  </div>
+
+  <button id="interact-btn">📚 Estudar Estação</button>
+  <div id="controls-hint">WASD / Setas: Mover • Espaço: Pular • E: Interagir • Arrastar mouse: Girar Câmera</div>
+
+  <!-- Mobile Controls -->
+  <div id="touch-controls">
+    <div id="joystick-zone"><div id="joystick-knob"></div></div>
+    <button id="jump-touch-btn">⬆️<span>PULAR</span></button>
+  </div>
+
+  <!-- Character Selection Screen (Apenas Aluno e Aluna) -->
+  <div id="start-screen">
+    <div class="setup-card">
+      <div class="school-header-badge">🏫 CCM • Centro Cultural Manilha</div>
+      <h1>Missão Sudeste 3D</h1>
+      <p class="sub">
+        Prepare-se para a expedição geográfica do <strong>CCM Centro Cultural Manilha</strong>! Personalize seu avatar e explore SP, RJ, MG e ES.
+      </p>
+
+      <label class="field-label">Selecione o perfil:</label>
+      <div class="role-grid">
+        <button class="role-btn active" data-role="aluno">👦 Aluno</button>
+        <button class="role-btn" data-role="aluna">👧 Aluna</button>
+      </div>
+
+      <label class="field-label" for="input-name">Nome do estudante:</label>
+      <input class="text-input" id="input-name" type="text" maxlength="18" placeholder="Digite seu nome..." value="Estudante CCM" />
+
+      <label class="field-label">Tom de pele:</label>
+      <div class="color-row" id="skin-swatches"></div>
+
+      <label class="field-label">Cor do cabelo:</label>
+      <div class="color-row" id="hair-swatches"></div>
+
+      <label class="field-label">Uniforme CCM:</label>
+      <div class="color-row" id="shirt-swatches"></div>
+
+      <button class="btn-primary" id="btn-start-game">🚀 Sair do CCM e Explorar o Sudeste</button>
+    </div>
+  </div>
+
+  <!-- NPC Teacher Modal -->
+  <div class="modal-backdrop" id="npc-modal">
+    <div class="modal-card" style="max-width:480px;">
+      <div class="modal-header">
+        <div>
+          <span class="school-header-badge" style="margin-bottom:4px;">🏫 CCM • Centro Cultural Manilha</span>
+          <h2 style="margin:2px 0 0; font-size:19px;">Professor de Geografia</h2>
+        </div>
+        <button class="modal-close" id="close-npc">✕</button>
+      </div>
+      <div class="study-box" id="npc-text"></div>
+      <button class="btn-primary" id="btn-npc-ok" style="margin-top:4px;">👍 Entendido! Vamos explorar!</button>
+    </div>
+  </div>
+
+  <!-- Study & Quiz Modal -->
+  <div class="modal-backdrop" id="station-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <span class="school-header-badge" id="st-state-badge" style="margin-bottom:4px;">SÃO PAULO</span>
+          <h2 id="st-title" style="margin:2px 0 0; font-size:20px;">Título da Estação</h2>
+        </div>
+        <button class="modal-close" id="close-station">✕</button>
+      </div>
+
+      <div id="phase-study">
+        <div class="study-box" id="st-study-content"></div>
+        <button class="btn-primary" id="btn-go-quiz" style="margin-top:4px;">🎯 Responder Desafio (+100 XP)</button>
+      </div>
+
+      <div id="phase-quiz" style="display:none;">
+        <div class="question-text" id="st-question"></div>
+        <div class="options-list" id="st-options"></div>
+        <div class="feedback-box" id="st-feedback"></div>
+        <div style="display:flex; gap:10px; margin-top:12px;">
+          <button class="btn-hud" id="btn-back-study" style="flex:1; justify-content:center;">📖 Rever Resumo</button>
+          <button class="btn-primary" id="btn-finish-station" style="flex:2; margin-top:0; display:none;">✅ Concluir Estação</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Map & Fast Travel Modal -->
+  <div class="modal-backdrop" id="map-modal">
+    <div class="modal-card" style="max-width:680px;">
+      <div class="modal-header">
+        <div>
+          <span class="school-header-badge" style="margin-bottom:4px;">CCM Centro Cultural Manilha</span>
+          <h2 style="margin:2px 0 0; font-size:20px;">Mapa das 12 Estações do Sudeste</h2>
+        </div>
+        <button class="modal-close" id="close-map">✕</button>
+      </div>
+      <p style="font-size:13px; color:var(--muted); margin:0 0 12px;">
+        Caminhe pelas rodovias coletando moedas de PIB ou use o teleporte rápido para qualquer estação:
+      </p>
+      <div class="map-grid" id="map-grid"></div>
+    </div>
+  </div>
+
+  <!-- Victory Certificate Modal -->
+  <div class="modal-backdrop" id="victory-modal">
+    <div class="modal-card" style="text-align:center;">
+      <div style="font-size:44px; margin-bottom:6px;">🏆🎓🇧🇷</div>
+      <div class="school-header-badge">Certificado • CCM Centro Cultural Manilha</div>
+      <h2 style="margin:4px 0 8px; font-size:23px; color:#fde047;">Missão Sudeste Concluída!</h2>
+      <p id="victory-summary" style="font-size:14px; color:#e2e8f0; line-height:1.55; margin-bottom:16px;"></p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn-primary" id="btn-keep-exploring" style="flex:1; margin-top:0;">🌍 Continuar Explorando</button>
+        <button class="btn-hud" id="btn-restart-game" style="flex:1; justify-content:center; padding:12px;">🔄 Jogar Novamente</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <div id="cdn-error">
+    <h2>Não foi possível carregar o motor 3D (Three.js)</h2>
+    <p style="color:#94a3b8; max-width:420px;">Verifique sua conexão com a internet para carregar a biblioteca gráfica 3D e recarregue a página.</p>
+    <button class="btn-primary" style="max-width:220px;" onclick="location.reload()">Recarregar</button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onerror="loadThreeFallback()"></script>
+  <script>
+    function loadThreeFallback() {
+      var s = document.createElement('script');
+      s.src = 'https://unpkg.com/three@0.128.0/build/three.min.js';
+      s.onerror = function() { document.getElementById('cdn-error').style.display = 'flex'; };
+      s.onload = function() { initApp(); };
+      document.head.appendChild(s);
+    }
+  </script>
+
+  <script>
+  // =========================================================================
+  // CONTEÚDO COMPLETO DO CAPÍTULO 11: REGIÕES BRASILEIRAS — SUDESTE
+  // =========================================================================
+  const STATIONS_DATA = [
+    // --- SÃO PAULO ---
+    {
+      id: 'sp-1',
+      state: 'SP',
+      stateName: 'São Paulo',
+      title: 'Metrópole Global e Hierarquia Urbana',
+      x: -28, z: 20,
+      color: 0x38bdf8,
+      study: `
+        <strong>População e Rede Urbana (Censo 2022):</strong>
+        <ul>
+          <li>O Sudeste (SP, MG, RJ, ES) abriga <strong>84,8 milhões de habitantes</strong> (<strong>41,8%</strong> do país) e tem a maior densidade demográfica do Brasil (<strong>91,76 hab./km²</strong>).</li>
+          <li><strong>São Paulo</strong> é o estado (44,4 mi) e o município (11.451.999 hab.; 7.528,26 hab./km²) mais populosos do país. É uma <strong>cidade global</strong> e <em>grande metrópole nacional</em>, sediando a bolsa <strong>B3</strong>.</li>
+          <li>As 5 metrópoles do Sudeste são: <strong>São Paulo, Rio de Janeiro, Belo Horizonte, Vitória e Campinas</strong>.</li>
+          <li>Ao longo da <strong>Rodovia Presidente Dutra</strong> (entre SP e RJ), analisa-se a existência da <strong>Megalópole Rio-São Paulo</strong> (mancha urbana ainda não totalmente contínua).</li>
+        </ul>
+      `,
+      question: 'Por que a cidade de São Paulo é considerada uma "cidade global" e o que caracteriza o eixo entre ela e o Rio de Janeiro?',
+      options: [
+        'Por ser a única cidade litorânea do Sudeste; forma um cinturão verde contínuo.',
+        'Por sediar empresas internacionais, universidades e a bolsa de valores (B3), conectando-se à economia mundial; entre SP e RJ há intenso adensamento urbano na Rodovia Dutra, debatido como possível megalópole.',
+        'Por ter a menor densidade demográfica do estado; entre SP e RJ predomina o extrativismo mineral.',
+        'Por concentrar 81,4% da população brasileira em área rural contínua.'
+      ],
+      correct: 1,
+      explanation: 'Correto! São Paulo integra contextos econômicos, culturais e financeiros mundiais (B3, multinacionais) e o adensamento ao longo da Dutra entre SP e RJ leva estudiosos a analisar a existência da Megalópole Rio-São Paulo.'
+    },
+    {
+      id: 'sp-2',
+      state: 'SP',
+      stateName: 'São Paulo',
+      title: 'Industrialização e Tecnopolos',
+      x: -36, z: 4,
+      color: 0xa855f7,
+      study: `
+        <strong>Indústria Paulista e Inovação:</strong>
+        <ul>
+          <li>Na década de 1930, <strong>Getúlio Vargas</strong> impulsionou a indústria de base e estatais, concentrando a industrialização no Sudeste — especialmente em <strong>São Paulo</strong>, que já tinha infraestrutura e <strong>capital do ciclo do café</strong>.</li>
+          <li>Destaque para as indústrias metalúrgica e automobilística no <strong>ABC Paulista</strong> (Santo André, São Bernardo do Campo e São Caetano do Sul).</li>
+          <li>SP abriga três grandes <strong>tecnopolos</strong>: <strong>Campinas</strong> (informática/telecomunicações/microeletrônica), <strong>São José dos Campos</strong> (setor aeroespacial) e <strong>São Carlos</strong> (setores mecânico e eletrônico).</li>
+          <li>Hoje há leve queda relativa da participação industrial do Sudeste pelo crescimento mais rápido de outras regiões com menores custos (terrenos, impostos, mão de obra e transporte).</li>
+        </ul>
+      `,
+      question: 'Quais dois fatores explicam a concentração inicial da indústria em São Paulo na década de 1930 e qual é um exemplo de tecnopolo paulista?',
+      options: [
+        'Falta de ferrovias e clima semiárido; Ouro Preto (setor de leite).',
+        'Infraestrutura prévia e capital proveniente do ciclo do café; São José dos Campos (setor aeroespacial).',
+        'Descoberta do pré-sal em 1930 e isenção total de impostos; Vitória (siderurgia).',
+        'Escassez de mão de obra e isolamento comercial; Uberlândia (papel e celulose).'
+      ],
+      correct: 1,
+      explanation: 'Exato! A infraestrutura já existente e o capital acumulado pelo café viabilizaram a indústria paulista. Campinas, São José dos Campos e São Carlos são os principais tecnopolos.'
+    },
+    {
+      id: 'sp-3',
+      state: 'SP',
+      stateName: 'São Paulo',
+      title: 'Agropecuária, Etanol 2G e Porto de Santos',
+      x: -16, z: 34,
+      color: 0x22c55e,
+      study: `
+        <strong>Setor Primário Forte e Logística:</strong>
+        <ul>
+          <li>Mesmo muito urbanizado, o Sudeste tem setor primário forte: <strong>MG e SP são o 2º e o 3º maiores produtores agropecuários</strong> do Brasil (atrás apenas de Mato Grosso).</li>
+          <li>SP destaca-se em <strong>café, cana-de-açúcar, laranja, banana, amendoim</strong>, além do maior rebanho de galináceos e produção de ovos.</li>
+          <li>Próximo às metrópoles ficam os <strong>cinturões verdes</strong> (agricultura familiar de folhosas e legumes).</li>
+          <li>A cana de SP estimula pesquisas: o <strong>etanol de segunda geração</strong> (feito do bagaço da cana) foi desenvolvido por parceria entre empresa privada e a <strong>Unicamp</strong>.</li>
+          <li>O <strong>Porto de Santos (SP)</strong> é o maior complexo portuário da América Latina e do Hemisfério Sul, e <strong>Guarulhos (SP)</strong> é o maior aeroporto da América do Sul.</li>
+        </ul>
+      `,
+      question: 'Mesmo sendo altamente urbanizado e industrializado, por que o Sudeste mantém um setor primário tão forte?',
+      options: [
+        'Porque a maior parte da população ainda vive no campo sem acesso a tecnologias.',
+        'Devido ao expressivo investimento em tecnologia e técnicas agrícolas, solos férteis, clima favorável e à alta demanda dos grandes centros urbanos (como nos cinturões verdes).',
+        'Porque o setor primário representa 69,2% do PIB da região.',
+        'Porque não há indústrias de transformação ou serviços ligados ao campo.'
+      ],
+      correct: 1,
+      explanation: 'Muito bem! Alta eficiência tecnológica, boas condições naturais e um grande mercado consumidor urbano mantêm o setor primário muito produtivo.'
+    },
+
+    // --- RIO DE JANEIRO ---
+    {
+      id: 'rj-1',
+      state: 'RJ',
+      stateName: 'Rio de Janeiro',
+      title: 'Setor Terciário, Turismo e PIB Regional',
+      x: 20, z: 26,
+      color: 0xf59e0b,
+      study: `
+        <strong>Riqueza dos Serviços e Contrastes Urbanos:</strong>
+        <ul>
+          <li>Em 2022, o Sudeste concentrou <strong>53,3% do PIB brasileiro</strong> (SP com 31,1% e RJ com 11,4%).</li>
+          <li>Na composição do PIB regional, o <strong>setor terciário gera 69,2%</strong>, o secundário 25,4% e o primário 5,4%.</li>
+          <li>O RJ destaca-se pelo <strong>turismo de sol e praia</strong> (como Copacabana), museus, grandes eventos e infraestrutura de entretenimento e telecomunicações.</li>
+          <li>Apesar da riqueza, há desigualdades: o Sudeste abriga três das seis maiores favelas do Brasil — <strong>Rocinha</strong> (a maior) e <strong>Rio das Pedras</strong> no RJ, e <strong>Paraisópolis</strong> em SP.</li>
+        </ul>
+      `,
+      question: 'Qual setor econômico mais contribui para o PIB da Região Sudeste e qual é a participação da região no PIB do Brasil (2022)?',
+      options: [
+        'Setor primário (69,2%); o Sudeste representa 25,4% do PIB brasileiro.',
+        'Setor secundário (53,3%); o Sudeste representa 31,1% do PIB brasileiro.',
+        'Setor terciário (69,2% do PIB regional); o Sudeste concentra 53,3% do PIB brasileiro.',
+        'Setor extrativo mineral (84%); o Sudeste concentra 98% do PIB nacional.'
+      ],
+      correct: 2,
+      explanation: 'Acertou! O setor terciário (comércio, finanças, turismo, serviços especializados) responde por 69,2% do PIB regional, e o Sudeste concentra 53,3% do PIB nacional.'
+    },
+    {
+      id: 'rj-2',
+      state: 'RJ',
+      stateName: 'Rio de Janeiro',
+      title: 'Petróleo, Gás Natural, Pré-Sal e Royalties',
+      x: 34, z: 26,
+      color: 0x0ea5e9,
+      study: `
+        <strong>Potência Energética no Litoral:</strong>
+        <ul>
+          <li>O Sudeste extrai cerca de <strong>98% do petróleo</strong> e <strong>84% do gás natural</strong> do Brasil, com destaque principal para o <strong>Rio de Janeiro</strong> (sede da Petrobras, fundada em 1953).</li>
+          <li>Na extração de gás natural e petróleo, há forte <strong>predomínio da extração em mar</strong> (offshore) no Rio de Janeiro.</li>
+          <li>O <strong>pré-sal</strong> é uma camada geológica a mais de 7 mil metros de profundidade, abaixo de uma espessa camada de sal.</li>
+          <li>As empresas pagam <strong>royalties</strong> mensais a municípios, estados e União para reduzir impactos socioambientais e financiar áreas prioritárias como saúde e educação.</li>
+        </ul>
+      `,
+      question: 'Sobre a extração de combustíveis fósseis no Sudeste e os royalties, assinale a afirmação correta:',
+      options: [
+        'Há predomínio da extração em terra no estado de Minas Gerais.',
+        'O pré-sal fica em águas rasas acima da camada de sal, com destaque para o Espírito Santo.',
+        'Há predomínio da extração em mar, liderada pelo Rio de Janeiro, e as empresas pagam royalties para compensar impactos e financiar áreas como saúde e educação.',
+        'O Sudeste extrai menos de 20% do petróleo nacional.'
+      ],
+      correct: 2,
+      explanation: 'Perfeito! O RJ lidera a extração em mar (como na camada do pré-sal), e os royalties compensam a exploração de recursos não renováveis.'
+    },
+    {
+      id: 'rj-3',
+      state: 'RJ',
+      stateName: 'Rio de Janeiro',
+      title: 'Migrações e Envelhecimento Demográfico',
+      x: 18, z: 6,
+      color: 0xec4899,
+      study: `
+        <strong>Novas Dinâmicas Populacionais:</strong>
+        <ul>
+          <li>Historicamente, o Sudeste recebeu grandes fluxos de migrantes (sobretudo do <strong>Nordeste</strong>) atraídos pela industrialização desde 1930.</li>
+          <li>No Censo 2022, <strong>SP e RJ tiveram saldo migratório negativo pela primeira vez</strong> (perda regional de ~120 mil hab. entre 2010 e 2022) devido à <strong>migração de retorno</strong>, alto custo de vida, trânsito, falta de moradia e violência.</li>
+          <li>Ainda assim, atrai imigrantes estrangeiros (como venezuelanos e bolivianos) e mantém migrações intrarregionais.</li>
+          <li>É a região mais envelhecida do país (<strong>idade mediana de 37 anos</strong>). No RJ, a taxa de fecundidade caiu para ~1,39 filho por mulher, e idosos (60+) já superam jovens (até 14 anos).</li>
+        </ul>
+      `,
+      question: 'A queda na taxa de fecundidade (1,39 filho por mulher) e o fato de haver mais idosos (60+) que jovens (até 14 anos) no RJ evidenciam qual processo demográfico?',
+      options: [
+        'Aumento da mortalidade infantil e explosão demográfica.',
+        'O envelhecimento da população.',
+        'O incremento da taxa de natalidade rural.',
+        'A diminuição da idade mediana para menos de 20 anos.'
+      ],
+      correct: 1,
+      explanation: 'Correto! Menos nascimentos aliados ao aumento da expectativa de vida provocam o envelhecimento da população.'
+    },
+
+    // --- MINAS GERAIS ---
+    {
+      id: 'mg-1',
+      state: 'MG',
+      stateName: 'Minas Gerais',
+      title: 'Mineração, Siderurgia e Riscos Ambientais',
+      x: -16, z: -12,
+      color: 0xf97316,
+      study: `
+        <strong>Do Ouro ao Quadrilátero Ferrífero:</strong>
+        <ul>
+          <li>MG destaca-se na mineração desde o ouro colonial (séculos XVII-XVIII), originando cidades como <strong>Ouro Preto e Mariana</strong> e transferindo a capital do Brasil para o RJ em 1763.</li>
+          <li>Hoje é referência mundial em <strong>minério de ferro</strong> no <strong>Quadrilátero Ferrífero</strong>. Parte do ferro vira ferro-gusa e aço na <strong>indústria siderúrgica</strong>.</li>
+          <li>Os rompimentos das barragens de rejeitos em <strong>Mariana (2015)</strong> e <strong>Brumadinho (2019)</strong> causaram perdas humanas, destruição de comunidades e contaminação de rios, reforçando a importância das normas ambientais e fiscalização.</li>
+        </ul>
+      `,
+      question: 'Qual é o papel da indústria siderúrgica em relação ao minério de ferro extraído em MG e qual alerta os casos de Mariana (2015) e Brumadinho (2019) deixaram?',
+      options: [
+        'Transforma o ferro em ferro-gusa e aço; os rompimentos reforçam o cumprimento das normas ambientais e a responsabilidade na prevenção de desastres.',
+        'Transforma o ferro em petróleo; os rompimentos provaram que a mineração não gera impactos em rios.',
+        'Substitui o ferro por eucalipto; não houve impactos econômicos nos rompimentos.',
+        'Exporta apenas ouro bruto sem beneficiamento no Brasil.'
+      ],
+      correct: 0,
+      explanation: 'Isso mesmo! A siderurgia beneficia o minério de ferro em ferro-gusa e aço, e os desastres de Mariana e Brumadinho reforçam a prevenção e a fiscalização.'
+    },
+    {
+      id: 'mg-2',
+      state: 'MG',
+      stateName: 'Minas Gerais',
+      title: 'Leite, Café, Silvicultura e Triângulo Mineiro',
+      x: -36, z: -22,
+      color: 0x84cc16,
+      study: `
+        <strong>Força Agropecuária e Florestal de Minas:</strong>
+        <ul>
+          <li><strong>Minas Gerais</strong> lidera a produção nacional de <strong>leite</strong> e também se destaca fortemente na cafeicultura.</li>
+          <li>É o <strong>1º lugar do Brasil em silvicultura</strong> (cultivo e manejo de florestas, sobretudo <strong>eucalipto</strong>), abastecendo indústrias de papel, celulose e móveis (SP fica em 3º lugar).</li>
+          <li>No oeste do estado está o <strong>Triângulo Mineiro</strong>, região de ocupação significativa com destaque para <strong>Uberlândia, Uberaba e Araxá</strong>.</li>
+        </ul>
+      `,
+      question: 'O que é a silvicultura e qual estado do Sudeste lidera essa atividade no Brasil?',
+      options: [
+        'Extração de gás natural no mar; liderada pelo Rio de Janeiro.',
+        'Cultivo e manejo de florestas (como plantações de eucalipto para papel, celulose e móveis); liderada por Minas Gerais.',
+        'Criação intensiva de galináceos em cinturões verdes; liderada pelo Espírito Santo.',
+        'Pesquisa aeroespacial em universidades públicas; liderada por São Paulo.'
+      ],
+      correct: 1,
+      explanation: 'Excelente! A silvicultura cultiva florestas plantadas (como eucalipto) para papel, celulose, compensados e móveis, tendo Minas Gerais na liderança.'
+    },
+    {
+      id: 'mg-3',
+      state: 'MG',
+      stateName: 'Minas Gerais',
+      title: 'Semiárido Mineiro e Desigualdade Espacial',
+      x: -10, z: -34,
+      color: 0xeab308,
+      study: `
+        <strong>Contrastes de Densidade e Desenvolvimento:</strong>
+        <ul>
+          <li>Embora o Sudeste tenha a maior densidade demográfica do país (91,76 hab./km²), a população está <strong>distribuída de forma desigual</strong>.</li>
+          <li>O <strong>Norte de Minas Gerais</strong> e o <strong>Vale do Jequitinhonha</strong> (além de parte do norte do ES) integram o <strong>Semiárido brasileiro</strong>.</li>
+          <li>Essas áreas têm clima mais seco, ocupação tardia em relação ao litoral, baixas densidades demográficas e os <strong>menores índices socioeconômicos (IDHM baixo)</strong> do Sudeste.</li>
+        </ul>
+      `,
+      question: 'Por que o Norte de Minas Gerais e o Vale do Jequitinhonha apresentam densidades demográficas e IDHM mais baixos que o centro-sul do Sudeste?',
+      options: [
+        'Porque ficam no litoral superpovoado com excesso de indústrias automobilísticas.',
+        'Por causa da ocupação tardia em relação ao litoral, do clima mais seco (parte do Semiárido brasileiro) e de menores índices socioeconômicos.',
+        'Porque são compostos exclusivamente por ilhas oceânicas sem acesso rodoviário.',
+        'Porque tiveram IDHM muito alto em 1991 e proibiram a agricultura familiar.'
+      ],
+      correct: 1,
+      explanation: 'Correto! A colonização começou no litoral, e a interiorização tardia somada às condições do Semiárido ajuda a explicar a menor densidade e o menor IDHM.'
+    },
+
+    // --- ESPÍRITO SANTO ---
+    {
+      id: 'es-1',
+      state: 'ES',
+      stateName: 'Espírito Santo',
+      title: 'IDHM Longevidade e Saúde no Sudeste',
+      x: 24, z: -26,
+      color: 0x10b981,
+      study: `
+        <strong>Qualidade de Vida e Saúde:</strong>
+        <ul>
+          <li>O <strong>IDHM do Sudeste é 0,778</strong> (acima da média nacional de 0,766). Estados: SP (0,806 - único muito alto), MG (0,774), ES (0,771) e RJ (0,762 - único abaixo da média do país).</li>
+          <li>Em <strong>IDHM Longevidade (0,822)</strong>, o <strong>Espírito Santo lidera o ranking nacional (0,864)</strong>, seguido por MG (0,846).</li>
+          <li>O Sudeste tem <strong>42,58 leitos de UTI por 100 mil hab.</strong> (média nacional: 36,06) e é referência em alta complexidade. A pandemia reduziu o índice em 2021, mas a expectativa de vida melhorou em 2024.</li>
+        </ul>
+      `,
+      question: 'De acordo com os indicadores de IDHM do capítulo, qual estado do Sudeste lidera o ranking nacional em IDHM Longevidade e qual estado tem o único IDHM geral abaixo da média brasileira?',
+      options: [
+        'São Paulo lidera em Longevidade; Minas Gerais está abaixo da média nacional.',
+        'Espírito Santo lidera o ranking nacional em Longevidade (0,864); Rio de Janeiro (0,762) está abaixo da média nacional (0,766).',
+        'Rio de Janeiro lidera em Longevidade; Espírito Santo tem o pior índice do Brasil.',
+        'Minas Gerais lidera em Longevidade; São Paulo está abaixo da média nacional.'
+      ],
+      correct: 1,
+      explanation: 'Na mosca! O Espírito Santo ocupa o 1º lugar nacional em IDHM Longevidade (0,864), enquanto o RJ (0,762) fica abaixo da média brasileira (0,766).'
+    },
+    {
+      id: 'es-2',
+      state: 'ES',
+      stateName: 'Espírito Santo',
+      title: 'Portos, Ferrovias e Economia Capixaba',
+      x: 36, z: -12,
+      color: 0x06b6d4,
+      study: `
+        <strong>Infraestrutura de Transportes do Sudeste:</strong>
+        <ul>
+          <li>O Sudeste possui a infraestrutura de transporte mais desenvolvida do Brasil, integrando o mercado interno às exportações.</li>
+          <li>Destaques portuários: <strong>Porto de Santos (SP)</strong>, <strong>Porto de Itaguaí (RJ)</strong> e <strong>Porto de Tubarão (ES)</strong>.</li>
+          <li>A região possui a <strong>maior malha ferroviária</strong> e grande malha rodoviária do país, além de <strong>Vitória (ES)</strong> entre as cinco metrópoles regionais (4º maior IDHM municipal em 2010).</li>
+        </ul>
+      `,
+      question: 'Qual trio de portos se destaca na infraestrutura de exportação da Região Sudeste, conectada à maior malha ferroviária do país?',
+      options: [
+        'Santos (SP), Itaguaí (RJ) e Tubarão (ES).',
+        'Guarulhos (SP), Congonhas (SP) e Galeão (RJ).',
+        'Ouro Preto (MG), Campinas (SP) e Niterói (RJ).',
+        'Paraisópolis (SP), Rocinha (RJ) e Mariana (MG).'
+      ],
+      correct: 0,
+      explanation: 'Certíssimo! Santos (SP), Itaguaí (RJ) e Tubarão (ES) são os grandes portos destacados; Guarulhos, Congonhas e Galeão são aeroportos.'
+    },
+    {
+      id: 'es-3',
+      state: 'ES',
+      stateName: 'Espírito Santo',
+      title: 'Educação, Renda e Desemprego',
+      x: 12, z: -14,
+      color: 0x8b5cf6,
+      study: `
+        <strong>Educação e Mercado de Trabalho:</strong>
+        <ul>
+          <li><strong>IDHM Educação:</strong> Sudeste tem 0,775 (Brasil 0,757), liderado por <strong>SP (0,839)</strong>. A alfabetização é de <strong>96,1%</strong> (2ª maior) e <strong>24%</strong> das pessoas (25+) têm graduação completa (BR: 20,5%).</li>
+          <li>Entre 2019 e 2021 (pandemia), o IDHM Educação caiu em todos os estados, <strong>exceto no Espírito Santo</strong>.</li>
+          <li><strong>IDHM Renda (0,741):</strong> após crises (2015 e pandemia), o Sudeste perdeu o 1º lugar para o Sul. Em 2024, o rendimento domiciliar foi de R$ 2.381 (SP: R$ 2.662).</li>
+          <li><strong>Desemprego (2º trim. 2025):</strong> o <strong>Espírito Santo teve o melhor índice (3,1%)</strong>, enquanto o RJ (8,1%) foi o único acima da média nacional (5,8%).</li>
+        </ul>
+      `,
+      question: 'Qual foi o comportamento do IDHM Educação durante a pandemia (2019-2021) e qual estado apresentou a menor taxa de desemprego do Sudeste no 2º trimestre de 2025?',
+      options: [
+        'Todos os estados subiram na Educação; o Rio de Janeiro teve o menor desemprego (3,1%).',
+        'Apenas o Espírito Santo não teve queda no IDHM Educação na pandemia; e o próprio Espírito Santo teve o menor desemprego regional (3,1%).',
+        'São Paulo teve queda para abaixo da média nacional; Minas Gerais teve 8,1% de desemprego.',
+        'O Sudeste passou a ocupar o 1º lugar em IDHM Renda na frente do Sul em 2021.'
+      ],
+      correct: 1,
+      explanation: 'Muito bem! O Espírito Santo foi a exceção positiva na manutenção do IDHM Educação entre 2019 e 2021 e registrou a menor taxa de desemprego (3,1%).'
+    }
+  ];
+
+  const SKIN_COLORS = ['#fde2c4', '#f1c27d', '#c68642', '#8d5524', '#5c3818'];
+  const HAIR_COLORS = ['#1e1b18', '#5c3317', '#a16207', '#1e293b', '#7f1d1d'];
+  const SHIRT_COLORS = ['#0284c7', '#1d4ed8', '#16a34a', '#dc2626', '#9333ea', '#0f172a'];
+
+  // =========================================================================
+  // ÁUDIO SINTETIZADO (WEB AUDIO API)
+  // =========================================================================
+  const SoundFX = {
+    ctx: null,
+    enabled: true,
+    init() {
+      if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(() => {});
+      }
+    },
+    play(freq, duration = 0.12, type = 'sine', vol = 0.11) {
+      if (!this.enabled) return;
+      this.init();
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+      gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + duration);
+    },
+    coin() { this.play(880, 0.08, 'triangle', 0.1); setTimeout(() => this.play(1174, 0.14, 'triangle', 0.1), 65); },
+    jump() { this.play(320, 0.08, 'sine', 0.1); setTimeout(() => this.play(480, 0.1, 'sine', 0.08), 50); },
+    success() { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => this.play(f, 0.18, 'triangle', 0.12), i * 85)); },
+    wrong() { this.play(220, 0.16, 'sawtooth', 0.08); setTimeout(() => this.play(170, 0.22, 'sawtooth', 0.08), 120); }
+  };
+
+  // =========================================================================
+  // ESTADO GLOBAL
+  // =========================================================================
+  const state = {
+    started: false,
+    paused: false,
+    role: 'aluno', // 'aluno' | 'aluna'
+    playerName: 'Estudante CCM',
+    skinColor: SKIN_COLORS[1],
+    hairColor: HAIR_COLORS[0],
+    shirtColor: SHIRT_COLORS[0],
+    score: 0,
+    completed: new Set(),
+    activeStation: null,
+    touchEnabled: ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)
+  };
+
+  const CCM_POS = { x: 8, z: 18 };
+  const NPC_POS = { x: 8, z: 22.8 };
+
+  let scene, camera, renderer;
+  let playerGroup, playerParts = {}, npcGroup;
+  let waterMesh, stationMeshes = [], coinMeshes = [], labelElements = [], vehicles = [];
+  let keys = {}, joyVec = { x: 0, y: 0 };
+  let playerVelY = 0, onGround = true, walkCycle = 0;
+  let camYaw = 0.28, camPitch = 0.42, camDist = 13.5;
+  let clock, particles = [];
+  let nearestStation = null, nearNPC = false;
+
+  // =========================================================================
+  // GERADOR DE TEXTURAS ESTILO KENNEY (BLOCKY CHARACTERS & CITY KIT)
+  // =========================================================================
+  function makeCanvasTex(w, h, drawFn) {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext('2d');
+    drawFn(ctx, w, h);
+    const tex = new THREE.CanvasTexture(c);
+    tex.magFilter = THREE.LinearFilter;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    return tex;
+  }
+
+  // Textura de janelas estilo Kenney City Kit Commercial 2.1
+  function makeBuildingWallTex(wallHex, frameHex, glassHex, cols, rows, accentBand = null) {
+    return makeCanvasTex(256, 256, (ctx, w, h) => {
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, wallHex);
+      grad.addColorStop(1, shadeHex(wallHex, -12));
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      if (accentBand) {
+        ctx.fillStyle = accentBand;
+        ctx.fillRect(0, h - 22, w, 12);
+      }
+
+      const padX = 16, padY = 16;
+      const cellW = (w - padX * 2) / cols;
+      const cellH = (h - padY * 2) / rows;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const x = padX + c * cellW + 4;
+          const y = padY + r * cellH + 5;
+          const ww = cellW - 8;
+          const wh = cellH - 10;
+
+          // Moldura escura arredondada
+          ctx.fillStyle = frameHex;
+          roundRect(ctx, x, y, ww, wh, 5);
+          ctx.fill();
+
+          // Vidro azul degradê estilo Kenney
+          const g = ctx.createLinearGradient(x, y, x + ww, y + wh);
+          g.addColorStop(0, glassHex);
+          g.addColorStop(1, shadeHex(glassHex, -25));
+          ctx.fillStyle = g;
+          roundRect(ctx, x + 3, y + 3, ww - 6, wh - 6, 3);
+          ctx.fill();
+
+          // Brilho sutil no vidro
+          ctx.fillStyle = 'rgba(255,255,255,0.22)';
+          ctx.fillRect(x + 5, y + 5, Math.max(3, (ww - 10) * 0.35), wh - 10);
+        }
+      }
+    });
+  }
+
+  // Textura de letreiro escolar CCM Centro Cultural Manilha
+  function makeCCMSignTex() {
+    return makeCanvasTex(512, 128, (ctx, w, h) => {
+      const grad = ctx.createLinearGradient(0, 0, w, 0);
+      grad.addColorStop(0, '#0f172a');
+      grad.addColorStop(0.5, '#1e3a8a');
+      grad.addColorStop(1, '#0f172a');
+      ctx.fillStyle = grad;
+      roundRect(ctx, 4, 4, w - 8, h - 8, 16);
+      ctx.fill();
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = '#fbbf24';
+      ctx.stroke();
+
+      ctx.fillStyle = '#fde047';
+      ctx.font = '900 42px Segoe UI, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('CCM', w / 2, 54);
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = '700 24px Segoe UI, sans-serif';
+      ctx.fillText('CENTRO CULTURAL MANILHA', w / 2, 95);
+    });
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function shadeHex(hex, amt) {
+    let num = parseInt(hex.replace('#', ''), 16);
+    let r = Math.min(255, Math.max(0, (num >> 16) + amt));
+    let g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amt));
+    let b = Math.min(255, Math.max(0, (num & 0x0000FF) + amt));
+    return '#' + (0x1000000 + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+
+  // Constrói um personagem estilo Kenney Blocky Characters 2.0 com texturas Canvas
+  function createKenneyBlockyCharacter(opts) {
+    const {
+      role = 'aluno', // 'aluno' | 'aluna' | 'professor'
+      skin = '#f1c27d',
+      hair = '#1e1b18',
+      shirt = '#0284c7',
+      pants = '#475569',
+      hasBackpack = true
+    } = opts;
+
+    const group = new THREE.Group();
+
+    // Texturas da Cabeça (6 faces: +X, -X, +Y, -Y, +Z frente, -Z trás)
+    const headFrontTex = makeCanvasTex(128, 128, (ctx, w, h) => {
+      ctx.fillStyle = skin;
+      ctx.fillRect(0, 0, w, h);
+
+      // Sombra suave no queixo estilo Kenney
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0.7, 'rgba(0,0,0,0)');
+      g.addColorStop(1, 'rgba(0,0,0,0.12)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+
+      // Cabelo na testa / franja
+      ctx.fillStyle = hair;
+      ctx.fillRect(0, 0, w, 28);
+      if (role === 'aluna') {
+        // Franja ondulada lateral
+        ctx.beginPath();
+        ctx.arc(32, 30, 26, 0, Math.PI);
+        ctx.arc(96, 26, 22, 0, Math.PI);
+        ctx.fill();
+      } else if (role === 'aluno') {
+        ctx.fillRect(0, 22, 18, 22);
+        ctx.fillRect(w - 18, 22, 18, 22);
+      } else {
+        // Professor careca com cabelo nas laterais
+        ctx.fillStyle = skin;
+        ctx.fillRect(14, 0, w - 28, 30);
+      }
+
+      // Sobrancelhas
+      ctx.fillStyle = role === 'professor' ? '#94a3b8' : shadeHex(hair, -10);
+      roundRect(ctx, 26, 44, 24, 7, 3); ctx.fill();
+      roundRect(ctx, 78, 44, 24, 7, 3); ctx.fill();
+
+      // Olhos estilo Kenney (quadrados arredondados escuros + brilho)
+      ctx.fillStyle = '#1e293b';
+      roundRect(ctx, 31, 56, 16, 18, 5); ctx.fill();
+      roundRect(ctx, 81, 56, 16, 18, 5); ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(34, 59, 5, 5);
+      ctx.fillRect(84, 59, 5, 5);
+
+      // Óculos para o professor
+      if (role === 'professor') {
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(39, 65, 16, 0, Math.PI * 2);
+        ctx.arc(89, 65, 16, 0, Math.PI * 2);
+        ctx.moveTo(55, 65); ctx.lineTo(73, 65);
+        ctx.stroke();
+      }
+
+      // Bochechas / sardas suaves
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.22)';
+      ctx.beginPath();
+      ctx.arc(24, 82, 7, 0, Math.PI * 2);
+      ctx.arc(104, 82, 7, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Nariz pequeno
+      ctx.fillStyle = shadeHex(skin, -22);
+      roundRect(ctx, 58, 72, 12, 9, 4); ctx.fill();
+
+      // Sorriso / Bigode
+      if (role === 'professor') {
+        ctx.fillStyle = '#94a3b8';
+        roundRect(ctx, 44, 86, 40, 12, 6); ctx.fill();
+      } else {
+        ctx.fillStyle = '#ffffff';
+        roundRect(ctx, 49, 88, 30, 12, 6); ctx.fill();
+      }
+    });
+
+    const makeHeadSideTex = (isRight) => makeCanvasTex(128, 128, (ctx, w, h) => {
+      ctx.fillStyle = skin;
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = hair;
+      if (role === 'professor') {
+        ctx.fillRect(0, 32, w, 26);
+      } else {
+        ctx.fillRect(0, 0, w, 34);
+        if (isRight) ctx.fillRect(0, 30, 58, role === 'aluna' ? 88 : 54);
+        else ctx.fillRect(w - 58, 30, 58, role === 'aluna' ? 88 : 54);
+      }
+      // Orelha estilizada
+      ctx.fillStyle = shadeHex(skin, -12);
+      ctx.beginPath();
+      ctx.arc(w / 2, 72, 13, 0, Math.PI * 2);
+      ctx.fill();
+      if (role === 'aluna') {
+        ctx.strokeStyle = '#f472b6';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(w / 2, 86, 5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    });
+
+    const headTopTex = makeCanvasTex(128, 128, (ctx, w, h) => {
+      ctx.fillStyle = role === 'professor' ? skin : hair;
+      ctx.fillRect(0, 0, w, h);
+      if (role !== 'professor') {
+        ctx.fillStyle = 'rgba(255,255,255,0.12)';
+        ctx.fillRect(28, 22, 12, 40);
+        ctx.fillRect(54, 16, 12, 48);
+      }
+    });
+
+    const headBackTex = makeCanvasTex(128, 128, (ctx, w, h) => {
+      ctx.fillStyle = skin;
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = hair;
+      ctx.fillRect(0, 0, w, role === 'aluna' ? 116 : (role === 'professor' ? 68 : 88));
+    });
+
+    const headMaterials = [
+      new THREE.MeshStandardMaterial({ map: makeHeadSideTex(true), roughness: 0.7 }),  // +X
+      new THREE.MeshStandardMaterial({ map: makeHeadSideTex(false), roughness: 0.7 }), // -X
+      new THREE.MeshStandardMaterial({ map: headTopTex, roughness: 0.7 }),             // +Y
+      new THREE.MeshStandardMaterial({ color: skin, roughness: 0.7 }),                 // -Y
+      new THREE.MeshStandardMaterial({ map: headFrontTex, roughness: 0.65 }),          // +Z
+      new THREE.MeshStandardMaterial({ map: headBackTex, roughness: 0.7 })             // -Z
+    ];
+
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 2.24, 0);
+    const headMesh = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.76, 0.76), headMaterials);
+    headMesh.castShadow = true;
+    headGroup.add(headMesh);
+
+    // Detalhe de cabelo 3D extra para Aluna (rabo de cavalo/coque)
+    if (role === 'aluna') {
+      const pony = new THREE.Mesh(
+        new THREE.BoxGeometry(0.32, 0.46, 0.24),
+        new THREE.MeshStandardMaterial({ color: hair, roughness: 0.75 })
+      );
+      pony.position.set(0, -0.05, -0.46);
+      pony.rotation.x = 0.22;
+      headGroup.add(pony);
+
+      const tie = new THREE.Mesh(
+        new THREE.BoxGeometry(0.36, 0.12, 0.28),
+        new THREE.MeshStandardMaterial({ color: '#fbbf24' })
+      );
+      tie.position.set(0, 0.14, -0.42);
+      headGroup.add(tie);
+    }
+    group.add(headGroup);
+
+    // Textura do Torso (Uniforme Escolar CCM / Jaleco Professor)
+    const torsoFrontTex = makeCanvasTex(128, 128, (ctx, w, h) => {
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, shirt);
+      g.addColorStop(1, shadeHex(shirt, -18));
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+
+      // Gola em V branca
+      ctx.fillStyle = '#f8fafc';
+      ctx.beginPath();
+      ctx.moveTo(40, 0); ctx.lineTo(88, 0); ctx.lineTo(64, 28); ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = skin;
+      ctx.beginPath();
+      ctx.moveTo(48, 0); ctx.lineTo(80, 0); ctx.lineTo(64, 18); ctx.closePath();
+      ctx.fill();
+
+      if (role === 'professor') {
+        // Crachá escolar CCM
+        ctx.fillStyle = '#f8fafc';
+        roundRect(ctx, 82, 42, 24, 30, 4); ctx.fill();
+        ctx.fillStyle = '#0284c7';
+        ctx.fillRect(86, 48, 16, 6);
+      } else {
+        // Brasão CCM no uniforme
+        ctx.fillStyle = '#fbbf24';
+        roundRect(ctx, 78, 34, 32, 20, 5); ctx.fill();
+        ctx.fillStyle = '#0f172a';
+        ctx.font = '900 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('CCM', 94, 48);
+      }
+
+      // Cinto estilizado Kenney
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(0, h - 18, w, 12);
+      ctx.fillStyle = '#cbd5e1';
+      roundRect(ctx, 52, h - 20, 24, 16, 3); ctx.fill();
+    });
+
+    const torsoSideMat = new THREE.MeshStandardMaterial({ color: shirt, roughness: 0.68 });
+    const torsoFrontMat = new THREE.MeshStandardMaterial({ map: torsoFrontTex, roughness: 0.65 });
+    const torsoMaterials = [torsoSideMat, torsoSideMat, torsoSideMat, torsoSideMat, torsoFrontMat, torsoSideMat];
+
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.86, 0.96, 0.5), torsoMaterials);
+    torso.position.y = 1.38;
+    torso.castShadow = true;
+    group.add(torso);
+
+    // Mochila Escolar CCM
+    if (hasBackpack) {
+      const bagTex = makeCanvasTex(128, 128, (ctx, w, h) => {
+        ctx.fillStyle = '#d97706';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#b45309';
+        roundRect(ctx, 18, 56, w - 36, 52, 10); ctx.fill();
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath(); ctx.arc(w / 2, 66, 6, 0, Math.PI * 2); ctx.fill();
+      });
+      const bagMat = new THREE.MeshStandardMaterial({ map: bagTex, roughness: 0.7 });
+      const backpack = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.74, 0.3), bagMat);
+      backpack.position.set(0, 1.4, -0.38);
+      backpack.castShadow = true;
+      group.add(backpack);
+    }
+
+    // Braços com manga da camisa + pele
+    const armTex = makeCanvasTex(64, 128, (ctx, w, h) => {
+      ctx.fillStyle = shirt;
+      ctx.fillRect(0, 0, w, 58);
+      ctx.fillStyle = shadeHex(shirt, -18);
+      ctx.fillRect(0, 50, w, 8);
+      ctx.fillStyle = skin;
+      ctx.fillRect(0, 58, w, h - 58);
+    });
+    const armMat = new THREE.MeshStandardMaterial({ map: armTex, roughness: 0.7 });
+
+    const makePivotLimb = (w, h, d, mat, yOff) => {
+      const pivot = new THREE.Group();
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+      m.position.y = yOff;
+      m.castShadow = true;
+      pivot.add(m);
+      return pivot;
+    };
+
+    const armL = makePivotLimb(0.32, 0.88, 0.32, armMat, -0.38);
+    armL.position.set(-0.62, 1.78, 0);
+    const armR = makePivotLimb(0.32, 0.88, 0.32, armMat, -0.38);
+    armR.position.set(0.62, 1.78, 0);
+
+    // Pernas com calça jeans + tênis com sola branca
+    const legTex = makeCanvasTex(64, 128, (ctx, w, h) => {
+      const g = ctx.createLinearGradient(0, 0, 0, h - 26);
+      g.addColorStop(0, pants);
+      g.addColorStop(1, shadeHex(pants, -18));
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h - 26);
+      // Tênis
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, h - 26, w, 16);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, h - 10, w, 10);
+    });
+    const legMat = new THREE.MeshStandardMaterial({ map: legTex, roughness: 0.75 });
+
+    const legL = makePivotLimb(0.38, 0.9, 0.4, legMat, -0.45);
+    legL.position.set(-0.22, 0.9, 0);
+    const legR = makePivotLimb(0.38, 0.9, 0.4, legMat, -0.45);
+    legR.position.set(0.22, 0.9, 0);
+
+    group.add(armL, armR, legL, legR);
+    return { group, parts: { headGroup, armL, armR, legL, legR } };
+  }
+
+  // =========================================================================
+  // GERADOR ARQUITETÔNICO ESTILO KENNEY CITY KIT COMMERCIAL 2.1
+  // =========================================================================
+  function buildKenneyBuilding({
+    x, y, z, w = 4.2, h = 6, d = 4.2,
+    wallColor = '#f1f5f9',
+    glassColor = '#60a5fa',
+    roofColor = '#334155',
+    awningColor = null,
+    cols = 3, rows = 4,
+    hasPenthouse = true
+  }) {
+    const bGroup = new THREE.Group();
+    bGroup.position.set(x, y, z);
+
+    const wallTex = makeBuildingWallTex(wallColor, '#334155', glassColor, cols, rows);
+    const wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.55 });
+    const trimMat = new THREE.MeshStandardMaterial({ color: roofColor, roughness: 0.75 });
+
+    // Térreo comercial escuro
+    const baseH = 1.4;
+    const base = new THREE.Mesh(new THREE.BoxGeometry(w + 0.08, baseH, d + 0.08), trimMat);
+    base.position.y = baseH / 2;
+    base.castShadow = true;
+    base.receiveShadow = true;
+    bGroup.add(base);
+
+    // Porta de vidro no térreo
+    const door = new THREE.Mesh(
+      new THREE.BoxGeometry(w * 0.36, 1.05, 0.14),
+      new THREE.MeshStandardMaterial({ color: '#93c5fd', roughness: 0.25, metalness: 0.2 })
+    );
+    door.position.set(0, 0.55, d / 2 + 0.03);
+    bGroup.add(door);
+
+    // Corpo principal com janelas Kenney
+    const bodyH = h - baseH;
+    const body = new THREE.Mesh(new THREE.BoxGeometry(w, bodyH, d), [wallMat, wallMat, trimMat, trimMat, wallMat, wallMat]);
+    body.position.y = baseH + bodyH / 2;
+    body.castShadow = true;
+    body.receiveShadow = true;
+    bGroup.add(body);
+
+    // Platibanda no telhado (borda elevada característica do City Kit)
+    const rimH = 0.35;
+    const rimT = 0.22;
+    const rFront = new THREE.Mesh(new THREE.BoxGeometry(w + 0.16, rimH, rimT), trimMat);
+    rFront.position.set(0, h + rimH / 2, d / 2);
+    const rBack = rFront.clone(); rBack.position.z = -d / 2;
+    const rLeft = new THREE.Mesh(new THREE.BoxGeometry(rimT, rimH, d + 0.16), trimMat);
+    rLeft.position.set(-w / 2, h + rimH / 2, 0);
+    const rRight = rLeft.clone(); rRight.position.x = w / 2;
+    bGroup.add(rFront, rBack, rLeft, rRight);
+
+    // Unidades de ar-condicionado / casa de máquinas no topo
+    if (hasPenthouse) {
+      const pent = new THREE.Mesh(new THREE.BoxGeometry(w * 0.38, 0.7, d * 0.38), new THREE.MeshStandardMaterial({ color: wallColor, roughness: 0.6 }));
+      pent.position.set(-w * 0.15, h + 0.35, -d * 0.15);
+      pent.castShadow = true;
+      bGroup.add(pent);
+    }
+
+    // Toldo colorido estilo Kenney detail-awning
+    if (awningColor) {
+      const awning = new THREE.Mesh(
+        new THREE.BoxGeometry(w * 0.72, 0.22, 0.9),
+        new THREE.MeshStandardMaterial({ color: awningColor, roughness: 0.5 })
+      );
+      awning.position.set(0, 1.38, d / 2 + 0.42);
+      awning.rotation.x = 0.25;
+      awning.castShadow = true;
+      bGroup.add(awning);
+    }
+
+    scene.add(bGroup);
+    return bGroup;
+  }
+
+  // Constrói a Escola CCM — Centro Cultural Manilha no mapa 3D
+  function buildCCMSchool(x, y, z) {
+    const school = new THREE.Group();
+    school.position.set(x, y, z);
+
+    const wallMat = new THREE.MeshStandardMaterial({
+      map: makeBuildingWallTex('#f8fafc', '#1e293b', '#38bdf8', 5, 2),
+      roughness: 0.5
+    });
+    const trimMat = new THREE.MeshStandardMaterial({ color: '#1e3a8a', roughness: 0.6 });
+    const slateMat = new THREE.MeshStandardMaterial({ color: '#334155', roughness: 0.75 });
+
+    // Bloco principal largo
+    const main = new THREE.Mesh(new THREE.BoxGeometry(11.5, 4.4, 5.2), [wallMat, wallMat, slateMat, slateMat, wallMat, wallMat]);
+    main.position.y = 2.2;
+    main.castShadow = true;
+    main.receiveShadow = true;
+    school.add(main);
+
+    // Ala lateral esquerda (estilo wide building do Kenney)
+    const wing = new THREE.Mesh(new THREE.BoxGeometry(4.4, 3.2, 4.6), [wallMat, wallMat, slateMat, slateMat, wallMat, wallMat]);
+    wing.position.set(-6.8, 1.6, 0.3);
+    wing.castShadow = true;
+    school.add(wing);
+
+    // Base escura e Marquise de Entrada (detail-overhang)
+    const canopy = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.32, 2.5), new THREE.MeshStandardMaterial({ color: '#fbbf24', roughness: 0.4 }));
+    canopy.position.set(0, 2.25, 3.8);
+    canopy.castShadow = true;
+    school.add(canopy);
+
+    for (const px of [-2.0, 2.0]) {
+      const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.2, 8), slateMat);
+      pillar.position.set(px, 1.1, 4.85);
+      school.add(pillar);
+    }
+
+    // Porta escolar dupla
+    const door = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.9, 0.15), new THREE.MeshStandardMaterial({ color: '#0284c7', roughness: 0.25 }));
+    door.position.set(0, 0.95, 2.62);
+    school.add(door);
+
+    // Letreiro CCM — Centro Cultural Manilha
+    const signBoard = new THREE.Mesh(
+      new THREE.BoxGeometry(6.8, 1.65, 0.28),
+      new THREE.MeshStandardMaterial({ map: makeCCMSignTex(), roughness: 0.35 })
+    );
+    signBoard.position.set(0, 4.85, 2.55);
+    signBoard.castShadow = true;
+    school.add(signBoard);
+
+    // Pátio com calçada e floreiras
+    const plaza = new THREE.Mesh(new THREE.BoxGeometry(16, 0.15, 7.5), new THREE.MeshStandardMaterial({ color: '#cbd5e1', roughness: 0.9 }));
+    plaza.position.set(-1.5, 0.08, 4.6);
+    plaza.receiveShadow = true;
+    school.add(plaza);
+
+    for (const fx of [-3.6, 3.6]) {
+      const planter = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.45, 0.9), slateMat);
+      planter.position.set(fx, 0.25, 3.5);
+      const bush = new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 8), new THREE.MeshStandardMaterial({ color: '#16a34a', flatShading: true }));
+      bush.position.set(fx, 0.72, 3.5);
+      school.add(planter, bush);
+    }
+
+    // Mastro com bandeira do CCM / Brasil
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 5.2, 8), new THREE.MeshStandardMaterial({ color: '#e2e8f0', metalness: 0.5 }));
+    pole.position.set(4.8, 2.6, 5.2);
+    const flag = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.85, 0.08), new THREE.MeshStandardMaterial({ color: '#22c55e' }));
+    flag.position.set(5.5, 4.7, 5.2);
+    school.add(pole, flag);
+
+    scene.add(school);
+    createWorldLabel('🏫 CCM Centro Cultural Manilha', x, y + 6.4, z + 2, 'school-tag');
+  }
+
+  // =========================================================================
+  // INICIALIZAÇÃO DO MUNDO 3D
+  // =========================================================================
+  function initApp() {
+    if (typeof THREE === 'undefined') return;
+    clock = new THREE.Clock();
+
+    const canvas = document.getElementById('game-canvas');
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0ea5e9);
+    scene.fog = new THREE.FogExp2(0x38bdf8, 0.005);
+
+    camera = new THREE.PerspectiveCamera(54, window.innerWidth / window.innerHeight, 0.1, 300);
+
+    scene.add(new THREE.HemisphereLight(0xf0f9ff, 0x334155, 0.88));
+    const sun = new THREE.DirectionalLight(0xfffbeb, 1.0);
+    sun.position.set(45, 72, 38);
+    sun.castShadow = true;
+    sun.shadow.mapSize.width = 1024;
+    sun.shadow.mapSize.height = 1024;
+    sun.shadow.camera.near = 10;
+    sun.shadow.camera.far = 190;
+    const d = 68;
+    sun.shadow.camera.left = -d; sun.shadow.camera.right = d;
+    sun.shadow.camera.top = d; sun.shadow.camera.bottom = -d;
+    scene.add(sun);
+
+    buildSudesteWorld();
+    buildPlayer();
+    buildNPCProfessor();
+    buildStations();
+    buildCoins();
+    buildVehicles();
+    setupUI();
+    setupInputs();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+    animate();
+  }
+
+  function getTerrainHeight(x, z) {
+    if (x > 44 || z > 44 || (x + z > 68)) return -1.2;
+    let h = 0;
+    if (z < -6 && x < 12) h += Math.min(2.1, (-z - 6) * 0.055);
+    const ridge = Math.exp(-Math.pow((x - 2) / 14, 2) - Math.pow((z - 10) / 14, 2)) * 0.9;
+    return h + ridge;
+  }
+
+  function buildSudesteWorld() {
+    // Oceano Atlântico
+    waterMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(280, 280, 16, 16).rotateX(-Math.PI / 2),
+      new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.25, metalness: 0.15, flatShading: true })
+    );
+    waterMesh.position.y = -0.85;
+    waterMesh.receiveShadow = true;
+    scene.add(waterMesh);
+
+    const addLand = (x, z, w, d, h, color) => {
+      const m = new THREE.Mesh(
+        new THREE.BoxGeometry(w, h, d),
+        new THREE.MeshStandardMaterial({ color, roughness: 0.88, flatShading: true })
+      );
+      m.position.set(x, h / 2 - 1.2, z);
+      m.receiveShadow = true;
+      m.castShadow = true;
+      scene.add(m);
+    };
+
+    // Platôs estaduais
+    addLand(-24, 20, 46, 40, 1.4, 0x4ade80);  // SP
+    addLand(-21, -20, 48, 40, 2.1, 0x84cc16); // MG
+    addLand(-8, -33, 28, 14, 2.25, 0xeab308); // Semiárido Norte MG
+    addLand(17, 18, 36, 28, 1.35, 0x22c55e);  // RJ
+    addLand(22, 33, 26, 5, 0.95, 0xfde68a);   // Praia Copacabana
+    addLand(23, -16, 28, 34, 1.5, 0x34d399);  // ES
+
+    // Malha Rodoviária com faixas amarelas e calçadas estilo City Kit
+    const roadMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.9 });
+    const dutra = new THREE.Mesh(new THREE.BoxGeometry(52, 0.14, 3.6), roadMat);
+    dutra.position.set(-4, 0.34, 24);
+    dutra.receiveShadow = true;
+    scene.add(dutra);
+
+    const stripeMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+    for (let sx = -26; sx <= 18; sx += 4) {
+      const st = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.16, 0.24), stripeMat);
+      st.position.set(sx, 0.35, 24);
+      scene.add(st);
+    }
+
+    const br040 = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.14, 48), roadMat);
+    br040.position.set(-14, 1.0, -2);
+    scene.add(br040);
+
+    const br101 = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.14, 44), roadMat);
+    br101.position.set(22, 0.36, -1);
+    scene.add(br101);
+
+    // 🏫 ESCOLA CCM — CENTRO CULTURAL MANILHA (Hub Inicial no RJ)
+    const ccmY = getTerrainHeight(CCM_POS.x, CCM_POS.z);
+    buildCCMSchool(CCM_POS.x, ccmY, CCM_POS.z);
+
+    // --- 1. SÃO PAULO (Kenney City Kit Commercial Skyscrapers & Edifícios) ---
+    buildKenneyBuilding({ x: -32, y: 0.2, z: 14, w: 3.6, h: 11.5, d: 3.6, wallColor: '#f8fafc', glassColor: '#60a5fa', awningColor: '#22c55e', cols: 3, rows: 7 });
+    buildKenneyBuilding({ x: -27, y: 0.2, z: 12, w: 4.0, h: 14.0, d: 4.0, wallColor: '#fed7aa', glassColor: '#93c5fd', awningColor: '#f59e0b', cols: 3, rows: 8 });
+    buildKenneyBuilding({ x: -22, y: 0.2, z: 15, w: 3.8, h: 9.2, d: 3.8, wallColor: '#e2e8f0', glassColor: '#38bdf8', awningColor: '#0284c7', cols: 3, rows: 5 });
+    buildKenneyBuilding({ x: -33, y: 0.2, z: 20, w: 4.6, h: 5.5, d: 3.6, wallColor: '#f1f5f9', glassColor: '#60a5fa', awningColor: '#10b981', cols: 4, rows: 3 });
+
+    // Tecnopolo SP (São José dos Campos / Campinas)
+    const dome = new THREE.Mesh(
+      new THREE.SphereGeometry(2.6, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2),
+      new THREE.MeshStandardMaterial({ color: '#e2e8f0', metalness: 0.45, roughness: 0.25 })
+    );
+    dome.position.set(-37, 0.2, -1);
+    scene.add(dome);
+    const rocket = new THREE.Mesh(new THREE.ConeGeometry(0.65, 3.2, 8), new THREE.MeshStandardMaterial({ color: '#ef4444' }));
+    rocket.position.set(-33, 2.0, 1);
+    scene.add(rocket);
+
+    // Porto de Santos
+    const crane = new THREE.Mesh(new THREE.BoxGeometry(0.6, 4.6, 0.6), new THREE.MeshStandardMaterial({ color: '#f97316' }));
+    crane.position.set(-14, 2.4, 38);
+    scene.add(crane);
+    const craneArm = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.5, 0.6), new THREE.MeshStandardMaterial({ color: '#f97316' }));
+    craneArm.position.set(-14, 4.5, 39.5); craneArm.rotation.y = Math.PI / 2;
+    scene.add(craneArm);
+    const ship = new THREE.Mesh(new THREE.BoxGeometry(6.5, 1.4, 2.5), new THREE.MeshStandardMaterial({ color: '#1e293b' }));
+    ship.position.set(-14, -0.1, 45);
+    scene.add(ship);
+
+    // --- 2. RIO DE JANEIRO (Edifícios comerciais, Copacabana com guarda-sóis Kenney, Pão de Açúcar, Pré-Sal) ---
+    buildKenneyBuilding({ x: 26, y: 0.2, z: 16, w: 4.4, h: 7.4, d: 3.8, wallColor: '#fffbeb', glassColor: '#38bdf8', awningColor: '#f59e0b', cols: 3, rows: 4 });
+    buildKenneyBuilding({ x: 31, y: 0.2, z: 18, w: 3.8, h: 5.8, d: 3.8, wallColor: '#f8fafc', glassColor: '#60a5fa', awningColor: '#ef4444', cols: 3, rows: 3 });
+
+    // Guarda-sóis e mesinhas estilo Kenney detail-parasol na Praia de Copacabana
+    for (let px = 14; px <= 28; px += 4.5) {
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.5, 6), new THREE.MeshStandardMaterial({ color: '#475569' }));
+      pole.position.set(px, 0.55, 33);
+      const top = new THREE.Mesh(new THREE.ConeGeometry(1.1, 0.45, 6), new THREE.MeshStandardMaterial({ color: px % 2 === 0 ? '#10b981' : '#f59e0b', flatShading: true }));
+      top.position.set(px, 1.35, 33);
+      scene.add(pole, top);
+    }
+
+    // Pão de Açúcar + Plataforma Pré-Sal
+    const pao = new THREE.Mesh(new THREE.ConeGeometry(4.2, 8.6, 10), new THREE.MeshStandardMaterial({ color: '#475569', flatShading: true }));
+    pao.position.set(34, 4.3, 21);
+    pao.castShadow = true;
+    scene.add(pao);
+
+    const rigBase = new THREE.Mesh(new THREE.BoxGeometry(5.5, 0.7, 5.5), new THREE.MeshStandardMaterial({ color: '#f59e0b' }));
+    rigBase.position.set(39, 1.2, 34);
+    scene.add(rigBase);
+    for (const lx of [-2, 2]) for (const lz of [-2, 2]) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 3, 6), new THREE.MeshStandardMaterial({ color: '#64748b' }));
+      leg.position.set(39 + lx, 0, 34 + lz);
+      scene.add(leg);
+    }
+    const rigTower = new THREE.Mesh(new THREE.ConeGeometry(1.1, 4.2, 4), new THREE.MeshStandardMaterial({ color: '#e2e8f0' }));
+    rigTower.position.set(39, 3.6, 34);
+    scene.add(rigTower);
+
+    // --- 3. MINAS GERAIS (Quadrilátero Ferrífero, Igreja Colonial, Edifícios BH/Triângulo, Silvicultura, Semiárido) ---
+    buildKenneyBuilding({ x: -24, y: 0.9, z: -10, w: 4.5, h: 6.8, d: 3.8, wallColor: '#f8fafc', glassColor: '#60a5fa', awningColor: '#f97316', cols: 3, rows: 4 });
+    const oreHill = new THREE.Mesh(new THREE.DodecahedronGeometry(4.2, 0), new THREE.MeshStandardMaterial({ color: '#9a3412', flatShading: true }));
+    oreHill.position.set(-20, 2.4, -18);
+    scene.add(oreHill);
+
+    // Igreja Colonial (Ouro Preto / Mariana)
+    const church = new THREE.Mesh(new THREE.BoxGeometry(3.2, 3.2, 4.2), new THREE.MeshStandardMaterial({ color: '#fef3c7' }));
+    church.position.set(-10, 2.5, -10);
+    const tower = new THREE.Mesh(new THREE.BoxGeometry(1.1, 5.0, 1.1), new THREE.MeshStandardMaterial({ color: '#fef3c7' }));
+    tower.position.set(-10, 3.5, -8.2);
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(0.9, 1.5, 4), new THREE.MeshStandardMaterial({ color: '#b45309' }));
+    roof.position.set(-10, 6.6, -8.2); roof.rotation.y = Math.PI / 4;
+    scene.add(church, tower, roof);
+
+    // Eucaliptos (Silvicultura MG) & Cactos Semiárido
+    for (let i = 0; i < 15; i++) {
+      const tx = -38 + (i % 5) * 3.2, tz = -31 + Math.floor(i / 5) * 3.5;
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.24, 2.2, 6), new THREE.MeshStandardMaterial({ color: '#78350f' }));
+      trunk.position.set(tx, 2.0, tz);
+      const crown = new THREE.Mesh(new THREE.ConeGeometry(0.95, 2.8, 7), new THREE.MeshStandardMaterial({ color: '#15803d', flatShading: true }));
+      crown.position.set(tx, 3.8, tz);
+      scene.add(trunk, crown);
+    }
+    for (let i = 0; i < 6; i++) {
+      const cactus = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.36, 2.3, 7), new THREE.MeshStandardMaterial({ color: '#4d7c0f' }));
+      cactus.position.set(-16 + i * 3.2, 2.2, -35 + (i % 2) * 3);
+      scene.add(cactus);
+    }
+
+    // --- 4. ESPÍRITO SANTO (Hospital da Longevidade estilo Kenney building-n, Porto de Tubarão) ---
+    const hosp = buildKenneyBuilding({ x: 24, y: 0.3, z: -20, w: 5.4, h: 6.4, d: 4.4, wallColor: '#ffffff', glassColor: '#38bdf8', awningColor: '#22c55e', cols: 4, rows: 4 });
+    // Cruz verde na fachada do Hospital (IDHM Longevidade)
+    const cH = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.42, 0.2), new THREE.MeshStandardMaterial({ color: '#22c55e' }));
+    cH.position.set(0, 4.6, 2.25);
+    const cV = new THREE.Mesh(new THREE.BoxGeometry(0.42, 1.4, 0.2), new THREE.MeshStandardMaterial({ color: '#22c55e' }));
+    cV.position.set(0, 4.6, 2.25);
+    hosp.add(cH, cV);
+
+    const esDock = new THREE.Mesh(new THREE.BoxGeometry(5, 0.8, 3), new THREE.MeshStandardMaterial({ color: '#64748b' }));
+    esDock.position.set(38, 0.2, -12);
+    const esShip = new THREE.Mesh(new THREE.BoxGeometry(5.5, 1.2, 2), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
+    esShip.position.set(44, -0.1, -12);
+    scene.add(esDock, esShip);
+
+    // Rótulos estaduais
+    createWorldLabel('SÃO PAULO', -26, 7.0, 19, 'state-tag');
+    createWorldLabel('RIO DE JANEIRO', 26, 7.0, 20, 'state-tag');
+    createWorldLabel('MINAS GERAIS', -21, 7.5, -18, 'state-tag');
+    createWorldLabel('ESPÍRITO SANTO', 24, 7.0, -16, 'state-tag');
+  }
+
+  function buildPlayer() {
+    const pos = playerGroup ? playerGroup.position.clone() : new THREE.Vector3(CCM_POS.x - 3, 1.2, CCM_POS.z + 7.5);
+    const rotY = playerGroup ? playerGroup.rotation.y : 0;
+    if (playerGroup) scene.remove(playerGroup);
+
+    const built = createKenneyBlockyCharacter({
+      role: state.role,
+      skin: state.skinColor,
+      hair: state.hairColor,
+      shirt: state.shirtColor,
+      pants: state.role === 'aluna' ? '#3b82f6' : '#334155',
+      hasBackpack: true
+    });
+    playerGroup = built.group;
+    playerParts = built.parts;
+    playerGroup.position.copy(pos);
+    playerGroup.rotation.y = rotY;
+    scene.add(playerGroup);
+  }
+
+  function buildNPCProfessor() {
+    const built = createKenneyBlockyCharacter({
+      role: 'professor',
+      skin: '#fde2c4',
+      hair: '#94a3b8',
+      shirt: '#bfdbfe',
+      pants: '#475569',
+      hasBackpack: false
+    });
+    npcGroup = built.group;
+    const y = getTerrainHeight(NPC_POS.x, NPC_POS.z);
+    npcGroup.position.set(NPC_POS.x, y + 0.12, NPC_POS.z);
+    scene.add(npcGroup);
+    createWorldLabel('👨‍🏫 Professor CCM', NPC_POS.x, y + 3.8, NPC_POS.z);
+  }
+
+  // Veículos animados circulando nas rodovias
+  function buildVehicles() {
+    const colors = [0xef4444, 0xfbbf24, 0x38bdf8, 0xf8fafc];
+    for (let i = 0; i < 4; i++) {
+      const car = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.75, 1.05), new THREE.MeshStandardMaterial({ color: colors[i], roughness: 0.4 }));
+      body.position.y = 0.5;
+      body.castShadow = true;
+      const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.55, 0.92), new THREE.MeshStandardMaterial({ color: '#cbd5e1', roughness: 0.25 }));
+      cabin.position.set(-0.1, 1.05, 0);
+      car.add(body, cabin);
+
+      const isDutra = i < 2;
+      car.position.set(isDutra ? -22 + i * 18 : 22, isDutra ? 0.35 : 0.38, isDutra ? (i === 0 ? 23.2 : 24.8) : -15 + i * 10);
+      if (!isDutra) car.rotation.y = Math.PI / 2;
+      scene.add(car);
+      vehicles.push({ mesh: car, axis: isDutra ? 'x' : 'z', dir: i % 2 === 0 ? 1 : -1, speed: 6 + i * 1.4 });
+    }
+  }
+
+  function createWorldLabel(text, x, y, z, extraClass = '') {
+    const el = document.createElement('div');
+    el.className = 'world-label ' + extraClass;
+    el.textContent = text;
+    document.getElementById('labels-layer').appendChild(el);
+    const item = { el, pos: new THREE.Vector3(x, y, z), stationId: null };
+    labelElements.push(item);
+    return item;
+  }
+
+  function buildStations() {
+    STATIONS_DATA.forEach(st => {
+      const yBase = Math.max(0.2, getTerrainHeight(st.x, st.z));
+      const group = new THREE.Group();
+      group.position.set(st.x, yBase, st.z);
+
+      const ped = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.4, 1.7, 0.5, 16),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 })
+      );
+      ped.position.y = 0.25;
+      ped.receiveShadow = true;
+      group.add(ped);
+
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.1, 8, 24), new THREE.MeshBasicMaterial({ color: st.color }));
+      ring.rotation.x = Math.PI / 2; ring.position.y = 0.52;
+      group.add(ring);
+
+      const crystal = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.9, 0),
+        new THREE.MeshStandardMaterial({ color: st.color, emissive: st.color, emissiveIntensity: 0.45, roughness: 0.2 })
+      );
+      crystal.position.y = 2.1; crystal.castShadow = true;
+      group.add(crystal);
+
+      const beam = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.18, 0.45, 18, 8, 1, true),
+        new THREE.MeshBasicMaterial({ color: st.color, transparent: true, opacity: 0.2, side: THREE.DoubleSide })
+      );
+      beam.position.y = 9.5;
+      group.add(beam);
+
+      scene.add(group);
+      const label = createWorldLabel(`${st.state}: ${st.title}`, st.x, yBase + 4.1, st.z);
+      label.stationId = st.id;
+      stationMeshes.push({ data: st, group, crystal, ring, beam, label });
+    });
+  }
+
+  function buildCoins() {
+    const coinGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.16, 12).rotateX(Math.PI / 2);
+    const coinMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xca8a04, emissiveIntensity: 0.35, metalness: 0.6 });
+    const spots = [
+      [-18, 24], [-10, 24], [-2, 24], [14, 24],
+      [-14, 12], [-14, 2], [-14, -6], [-24, -18], [-28, -6],
+      [22, 12], [22, 2], [22, -8], [28, -18], [0, -24], [16, 31], [-22, 29]
+    ];
+    spots.forEach(([x, z]) => {
+      const y = Math.max(0.2, getTerrainHeight(x, z)) + 1.1;
+      const coin = new THREE.Mesh(coinGeo, coinMat);
+      coin.position.set(x, y, z);
+      scene.add(coin);
+      coinMeshes.push({ mesh: coin, collected: false, baseY: y });
+    });
+  }
+
+  // =========================================================================
+  // CONTROLES (TECLADO + MOUSE + JOYSTICK TOUCH MOBILE)
+  // =========================================================================
+  function setupInputs() {
+    window.addEventListener('keydown', e => {
+      keys[e.code] = true;
+      if (e.code === 'Space' && state.started && !state.paused && onGround) {
+        playerVelY = 0.28; onGround = false; SoundFX.jump();
+      }
+      if ((e.code === 'KeyE' || e.code === 'Enter') && state.started && !state.paused) {
+        tryInteract();
+      }
+    });
+    window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+    const canvas = document.getElementById('game-canvas');
+    let dragging = false, lastX = 0, lastY = 0;
+    canvas.addEventListener('pointerdown', e => {
+      if (e.target !== canvas) return;
+      dragging = true; lastX = e.clientX; lastY = e.clientY;
+    });
+    window.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      const dx = e.clientX - lastX, dy = e.clientY - lastY;
+      lastX = e.clientX; lastY = e.clientY;
+      camYaw -= dx * 0.0065;
+      camPitch = Math.max(0.18, Math.min(1.15, camPitch + dy * 0.005));
+    });
+    window.addEventListener('pointerup', () => { dragging = false; });
+    canvas.addEventListener('wheel', e => { camDist = Math.max(7, Math.min(26, camDist + e.deltaY * 0.01)); }, { passive: true });
+
+    const joyZone = document.getElementById('joystick-zone');
+    const joyKnob = document.getElementById('joystick-knob');
+    let joyTouchId = null;
+    const maxR = 42;
+
+    const updateJoy = (clientX, clientY) => {
+      const rect = joyZone.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+      let dx = clientX - cx, dy = clientY - cy;
+      const dist = Math.hypot(dx, dy);
+      if (dist > maxR) { dx = (dx / dist) * maxR; dy = (dy / dist) * maxR; }
+      joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+      joyVec.x = dx / maxR; joyVec.y = dy / maxR;
+    };
+
+    joyZone.addEventListener('touchstart', e => { e.preventDefault(); const t = e.changedTouches[0]; joyTouchId = t.identifier; updateJoy(t.clientX, t.clientY); }, { passive: false });
+    joyZone.addEventListener('touchmove', e => { e.preventDefault(); for (const t of e.changedTouches) if (t.identifier === joyTouchId) updateJoy(t.clientX, t.clientY); }, { passive: false });
+    const resetJoy = () => { joyTouchId = null; joyVec.x = 0; joyVec.y = 0; joyKnob.style.transform = 'translate(-50%, -50%)'; };
+    joyZone.addEventListener('touchend', resetJoy);
+    joyZone.addEventListener('touchcancel', resetJoy);
+
+    document.getElementById('jump-touch-btn').addEventListener('touchstart', e => {
+      e.preventDefault();
+      if (state.started && !state.paused && onGround) { playerVelY = 0.28; onGround = false; SoundFX.jump(); }
+    }, { passive: false });
+  }
+
+  // =========================================================================
+  // UI E INTERAÇÕES
+  // =========================================================================
+  function setupUI() {
+    const buildSwatches = (id, list, initialIdx, onPick) => {
+      const wrap = document.getElementById(id);
+      list.forEach((c, idx) => {
+        const b = document.createElement('div');
+        b.className = 'swatch' + (idx === initialIdx ? ' active' : '');
+        b.style.background = c;
+        b.onclick = () => {
+          wrap.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+          b.classList.add('active');
+          onPick(c);
+          buildPlayer();
+        };
+        wrap.appendChild(b);
+      });
+    };
+
+    buildSwatches('skin-swatches', SKIN_COLORS, 1, c => state.skinColor = c);
+    buildSwatches('hair-swatches', HAIR_COLORS, 0, c => state.hairColor = c);
+    buildSwatches('shirt-swatches', SHIRT_COLORS, 0, c => state.shirtColor = c);
+
+    // Seleção exclusiva: Aluno ou Aluna
+    document.querySelectorAll('.role-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.role = btn.dataset.role;
+        buildPlayer();
+      };
+    });
+
+    document.getElementById('btn-start-game').onclick = () => {
+      SoundFX.init();
+      const name = document.getElementById('input-name').value.trim();
+      state.playerName = name || (state.role === 'aluno' ? 'Aluno CCM' : 'Aluna CCM');
+      state.started = true;
+      document.getElementById('start-screen').style.display = 'none';
+      document.getElementById('hud').style.display = 'flex';
+      document.getElementById('top-info-strip').style.display = 'flex';
+      document.getElementById('hud-name').textContent = state.playerName;
+      updateControlVisibility();
+      SoundFX.success();
+      showToast(`Bem-vindo(a) ao CCM, ${state.playerName}! Fale com o Professor ou siga a bússola.`);
+    };
+
+    document.getElementById('btn-sound').onclick = () => {
+      SoundFX.enabled = !SoundFX.enabled;
+      document.getElementById('btn-sound').textContent = SoundFX.enabled ? '🔊' : '🔇';
+    };
+
+    document.getElementById('btn-touch-toggle').onclick = () => {
+      state.touchEnabled = !state.touchEnabled;
+      updateControlVisibility();
+    };
+
+    document.getElementById('btn-home').onclick = () => {
+      const y = getTerrainHeight(CCM_POS.x, CCM_POS.z);
+      playerGroup.position.set(CCM_POS.x - 3, y + 0.4, CCM_POS.z + 7.5);
+      showToast('De volta à escola CCM Centro Cultural Manilha!');
+    };
+
+    document.getElementById('btn-map').onclick = openMapModal;
+    document.getElementById('close-map').onclick = () => closeModal('map-modal');
+    document.getElementById('close-station').onclick = () => closeModal('station-modal');
+    document.getElementById('close-npc').onclick = () => closeModal('npc-modal');
+    document.getElementById('btn-npc-ok').onclick = () => closeModal('npc-modal');
+    document.getElementById('interact-btn').onclick = tryInteract;
+
+    document.getElementById('btn-go-quiz').onclick = () => {
+      document.getElementById('phase-study').style.display = 'none';
+      document.getElementById('phase-quiz').style.display = 'block';
+    };
+    document.getElementById('btn-back-study').onclick = () => {
+      document.getElementById('phase-quiz').style.display = 'none';
+      document.getElementById('phase-study').style.display = 'block';
+    };
+    document.getElementById('btn-finish-station').onclick = () => {
+      closeModal('station-modal');
+      if (state.completed.size === STATIONS_DATA.length) openVictoryModal();
+    };
+
+    document.getElementById('btn-keep-exploring').onclick = () => closeModal('victory-modal');
+    document.getElementById('btn-restart-game').onclick = () => location.reload();
+  }
+
+  function updateControlVisibility() {
+    document.getElementById('touch-controls').style.display = state.touchEnabled ? 'block' : 'none';
+    document.getElementById('controls-hint').style.display = state.touchEnabled ? 'none' : 'block';
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2900);
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+    state.paused = false;
+  }
+
+  function tryInteract() {
+    if (nearestStation) {
+      openStationModal(nearestStation.data);
+    } else if (nearNPC) {
+      openNPCModal();
+    }
+  }
+
+  function openNPCModal() {
+    state.paused = true;
+    const faltam = STATIONS_DATA.length - state.completed.size;
+    document.getElementById('npc-text').innerHTML = `
+      <p style="margin-top:0;">Olá, <strong>${state.playerName}</strong>! Que bom ver você representando o <strong>CCM Centro Cultural Manilha</strong> nesta missão!</p>
+      <ul>
+        <li>Sua meta é visitar as <strong>12 estações de Geografia</strong> espalhadas por São Paulo, Rio de Janeiro, Minas Gerais e Espírito Santo.</li>
+        <li>Atualmente restam <strong>${faltam}</strong> estações para concluir o capítulo.</li>
+        <li>Acompanhe a <strong>bússola no topo da tela</strong> ou clique em <strong>🗺️ Mapa</strong> se quiser ir direto para um estado!</li>
+      </ul>
+    `;
+    document.getElementById('npc-modal').style.display = 'flex';
+  }
+
+  function openStationModal(st) {
+    state.paused = true;
+    state.activeStation = st;
+    document.getElementById('st-state-badge').textContent = `${st.state} • ${st.stateName}`;
+    document.getElementById('st-title').textContent = st.title;
+    document.getElementById('st-study-content').innerHTML = st.study;
+    document.getElementById('phase-study').style.display = 'block';
+    document.getElementById('phase-quiz').style.display = 'none';
+
+    document.getElementById('st-question').textContent = st.question;
+    const optsEl = document.getElementById('st-options');
+    optsEl.innerHTML = '';
+    document.getElementById('st-feedback').style.display = 'none';
+    document.getElementById('btn-finish-station').style.display = state.completed.has(st.id) ? 'block' : 'none';
+
+    st.options.forEach((opt, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.textContent = `${String.fromCharCode(65 + idx)}) ${opt}`;
+      btn.onclick = () => handleAnswer(idx, btn, st);
+      optsEl.appendChild(btn);
+    });
+
+    document.getElementById('station-modal').style.display = 'flex';
+  }
+
+  function handleAnswer(idx, btn, st) {
+    const fb = document.getElementById('st-feedback');
+    const allBtns = document.querySelectorAll('#st-options .option-btn');
+
+    if (idx === st.correct) {
+      allBtns.forEach(b => b.disabled = true);
+      btn.classList.add('correct');
+      fb.className = 'feedback-box ok';
+      fb.innerHTML = `<strong>✅ Resposta Correta!</strong> ${st.explanation}`;
+      fb.style.display = 'block';
+      document.getElementById('btn-finish-station').style.display = 'block';
+
+      if (!state.completed.has(st.id)) {
+        state.completed.add(st.id);
+        state.score += 100;
+        SoundFX.success();
+        markStationCompletedVisual(st.id);
+        updateHUD();
+        spawnConfetti(playerGroup.position.clone().add(new THREE.Vector3(0, 2.5, 0)), 0x22c55e);
+      } else {
+        SoundFX.coin();
+      }
+    } else {
+      btn.classList.add('wrong');
+      btn.disabled = true;
+      fb.className = 'feedback-box err';
+      fb.innerHTML = `<strong>❌ Ainda não!</strong> Volte ao resumo se precisar e tente outra alternativa.`;
+      fb.style.display = 'block';
+      SoundFX.wrong();
+    }
+  }
+
+  function markStationCompletedVisual(stationId) {
+    const sm = stationMeshes.find(s => s.data.id === stationId);
+    if (!sm) return;
+    sm.crystal.material.color.setHex(0x22c55e);
+    sm.crystal.material.emissive.setHex(0x22c55e);
+    sm.ring.material.color.setHex(0x22c55e);
+    sm.beam.material.color.setHex(0x22c55e);
+    sm.beam.material.opacity = 0.08;
+    sm.label.el.classList.add('done');
+    sm.label.el.textContent = '✅ ' + sm.label.el.textContent;
+  }
+
+  function updateHUD() {
+    document.getElementById('hud-score').textContent = state.score;
+    document.getElementById('hud-progress').textContent = `${state.completed.size}/${STATIONS_DATA.length}`;
+    ['SP', 'MG', 'RJ', 'ES'].forEach(uf => {
+      const total = STATIONS_DATA.filter(s => s.state === uf).length;
+      const done = STATIONS_DATA.filter(s => s.state === uf && state.completed.has(s.id)).length;
+      const badge = document.getElementById('badge-' + uf);
+      badge.textContent = `${uf} ${done}/${total}`;
+      if (done === total) badge.classList.add('complete');
+    });
+  }
+
+  function openMapModal() {
+    state.paused = true;
+    const grid = document.getElementById('map-grid');
+    grid.innerHTML = '';
+
+    STATIONS_DATA.forEach(st => {
+      const isDone = state.completed.has(st.id);
+      const item = document.createElement('div');
+      item.className = 'map-item' + (isDone ? ' done' : '');
+      item.innerHTML = `
+        <div>
+          <div style="font-size:11px; font-weight:800; color:${isDone ? '#86efac' : '#7dd3fc'};">
+            ${st.stateName.toUpperCase()} ${isDone ? '• ✅ CONCLUÍDA' : ''}
+          </div>
+          <div style="font-size:14px; font-weight:700; margin-top:2px;">${st.title}</div>
+        </div>
+        <button class="btn-mini ${isDone ? 'done' : ''}">🚀 Ir até lá</button>
+      `;
+      item.querySelector('button').onclick = () => {
+        const y = Math.max(0.2, getTerrainHeight(st.x, st.z));
+        playerGroup.position.set(st.x, y + 0.5, st.z + 3.2);
+        closeModal('map-modal');
+        showToast(`Teleportado para: ${st.title}`);
+      };
+      grid.appendChild(item);
+    });
+
+    document.getElementById('map-modal').style.display = 'flex';
+  }
+
+  function openVictoryModal() {
+    state.paused = true;
+    SoundFX.success();
+    spawnConfetti(playerGroup.position.clone().add(new THREE.Vector3(0, 3, 0)), 0xfacc15, 45);
+    const roleLabel = state.role === 'aluno' ? 'Aluno' : 'Aluna';
+    document.getElementById('victory-summary').innerHTML = `
+      O <strong>CCM — Centro Cultural Manilha</strong> parabeniza <strong>${state.playerName}</strong> (${roleLabel}) pela conclusão das <strong>12 estações</strong> pelos estados de São Paulo, Minas Gerais, Rio de Janeiro e Espírito Santo, somando <strong>${state.score} XP</strong>!<br><br>
+      Você revisou todo o capítulo sobre a Região Sudeste: Censo 2022, metrópoles, setor primário, mineração, pré-sal, indústria/tecnopolos, PIB e IDHM.
+    `;
+    document.getElementById('victory-modal').style.display = 'flex';
+  }
+
+  // =========================================================================
+  // BÚSSOLA, PARTÍCULAS E LOOP DE ANIMAÇÃO 3D
+  // =========================================================================
+  function spawnConfetti(origin, color, count = 24) {
+    const geo = new THREE.BoxGeometry(0.18, 0.18, 0.18);
+    for (let i = 0; i < count; i++) {
+      const mat = new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? color : 0x38bdf8 });
+      const p = new THREE.Mesh(geo, mat);
+      p.position.copy(origin);
+      p.userData = { vx: (Math.random() - 0.5) * 0.25, vy: Math.random() * 0.25 + 0.1, vz: (Math.random() - 0.5) * 0.25, life: 1.2 };
+      scene.add(p);
+      particles.push(p);
+    }
+  }
+
+  function updateZoneAndCompass() {
+    const x = playerGroup.position.x, z = playerGroup.position.z;
+    const b = document.getElementById('zone-banner');
+    if (Math.hypot(x - CCM_POS.x, z - (CCM_POS.z + 3)) < 11) {
+      b.textContent = '🏫 CCM Centro Cultural Manilha — Fale com o Professor ou explore o Sudeste!';
+    } else if (x < 0 && z >= 0) {
+      b.textContent = '📍 São Paulo — Metrópole Global, Indústria, Cana e Porto de Santos';
+    } else if (x < 4 && z < 0) {
+      b.textContent = (z < -26 && x > -22)
+        ? '📍 Norte de MG / Jequitinhonha — Semiárido Brasileiro'
+        : '📍 Minas Gerais — Quadrilátero Ferrífero, Leite, Café e Silvicultura';
+    } else if (x >= 0 && z >= 2) {
+      b.textContent = '📍 Rio de Janeiro — Serviços, Turismo, Pré-Sal e Migrações';
+    } else {
+      b.textContent = '📍 Espírito Santo — IDHM Longevidade, Educação e Porto de Tubarão';
+    }
+
+    // Bússola para estação pendente mais próxima
+    const pending = STATIONS_DATA.filter(s => !state.completed.has(s.id));
+    const compassTxt = document.getElementById('compass-text');
+    const compassArrow = document.getElementById('compass-arrow');
+
+    if (pending.length === 0) {
+      compassArrow.textContent = '🏆';
+      compassArrow.style.transform = 'none';
+      compassTxt.textContent = 'Todas as 12 estações concluídas!';
+      return;
+    }
+
+    let closest = pending[0], bestD = Infinity;
+    pending.forEach(s => {
+      const d = Math.hypot(s.x - x, s.z - z);
+      if (d < bestD) { bestD = d; closest = s; }
+    });
+
+    // Direção relativa à câmera
+    const worldAngle = Math.atan2(closest.x - x, closest.z - z);
+    const relDeg = ((worldAngle - camYaw) * 180) / Math.PI;
+    compassArrow.textContent = '⬆️';
+    compassArrow.style.transform = `rotate(${-relDeg + 180}deg)`;
+    compassTxt.textContent = `Próxima: ${closest.state} • ${closest.title} (${Math.round(bestD)}m)`;
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const dt = Math.min(0.05, clock.getDelta());
+    const t = clock.elapsedTime;
+
+    if (waterMesh) waterMesh.position.y = -0.85 + Math.sin(t * 1.4) * 0.08;
+
+    stationMeshes.forEach((sm, i) => {
+      sm.crystal.rotation.y += dt * 1.5;
+      sm.crystal.position.y = 2.1 + Math.sin(t * 2.2 + i) * 0.25;
+      sm.ring.scale.setScalar(1 + Math.sin(t * 3 + i) * 0.05);
+    });
+
+    coinMeshes.forEach((c, i) => {
+      if (c.collected) return;
+      c.mesh.rotation.y += dt * 2.4;
+      c.mesh.position.y = c.baseY + Math.sin(t * 3 + i) * 0.16;
+    });
+
+    // Veículos nas rodovias
+    vehicles.forEach(v => {
+      if (v.axis === 'x') {
+        v.mesh.position.x += v.dir * v.speed * dt;
+        if (v.mesh.position.x > 20) v.mesh.position.x = -26;
+        if (v.mesh.position.x < -26) v.mesh.position.x = 20;
+      } else {
+        v.mesh.position.z += v.dir * v.speed * dt;
+        if (v.mesh.position.z > 20) v.mesh.position.z = -20;
+        if (v.mesh.position.z < -20) v.mesh.position.z = 20;
+      }
+    });
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.position.x += p.userData.vx;
+      p.position.y += p.userData.vy;
+      p.position.z += p.userData.vz;
+      p.userData.vy -= 0.01;
+      p.userData.life -= dt;
+      p.rotation.x += 0.1; p.rotation.y += 0.1;
+      if (p.userData.life <= 0) { scene.remove(p); particles.splice(i, 1); }
+    }
+
+    // Preview na tela inicial (Personagem em frente à Escola CCM)
+    if (!state.started) {
+      playerGroup.rotation.y += dt * 0.7;
+      playerParts.armL.rotation.x = Math.sin(t * 2) * 0.08;
+      playerParts.armR.rotation.x = -Math.sin(t * 2) * 0.08;
+      const previewCamPos = new THREE.Vector3(playerGroup.position.x + 2.3, playerGroup.position.y + 1.9, playerGroup.position.z + 4.4);
+      camera.position.lerp(previewCamPos, 0.1);
+      camera.lookAt(playerGroup.position.x - 0.85, playerGroup.position.y + 1.4, playerGroup.position.z);
+      renderer.render(scene, camera);
+      return;
+    }
+
+    if (!state.paused) {
+      let moveX = 0, moveZ = 0;
+      if (keys['KeyW'] || keys['ArrowUp']) moveZ -= 1;
+      if (keys['KeyS'] || keys['ArrowDown']) moveZ += 1;
+      if (keys['KeyA'] || keys['ArrowLeft']) moveX -= 1;
+      if (keys['KeyD'] || keys['ArrowRight']) moveX += 1;
+      if (keys['KeyQ']) camYaw += dt * 1.8;
+      if (keys['KeyE'] && !nearestStation && !nearNPC) camYaw -= dt * 1.8;
+
+      if (Math.abs(joyVec.x) > 0.08 || Math.abs(joyVec.y) > 0.08) {
+        moveX += joyVec.x; moveZ += joyVec.y;
+      }
+
+      const len = Math.hypot(moveX, moveZ);
+      const speed = 13.5 * dt;
+
+      if (len > 0.05) {
+        moveX /= Math.max(1, len);
+        moveZ /= Math.max(1, len);
+        const sinY = Math.sin(camYaw), cosY = Math.cos(camYaw);
+        const worldDx = moveX * cosY + moveZ * sinY;
+        const worldDz = -moveX * sinY + moveZ * cosY;
+
+        playerGroup.position.x = Math.max(-44, Math.min(40, playerGroup.position.x + worldDx * speed));
+        playerGroup.position.z = Math.max(-39, Math.min(39, playerGroup.position.z + worldDz * speed));
+
+        const targetAngle = Math.atan2(worldDx, worldDz);
+        let diff = targetAngle - playerGroup.rotation.y;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        playerGroup.rotation.y += diff * 0.22;
+
+        walkCycle += dt * 11;
+        const swing = Math.sin(walkCycle) * 0.65;
+        playerParts.legL.rotation.x = swing;
+        playerParts.legR.rotation.x = -swing;
+        playerParts.armL.rotation.x = -swing * 0.8;
+        playerParts.armR.rotation.x = swing * 0.8;
+      } else {
+        playerParts.legL.rotation.x *= 0.8;
+        playerParts.legR.rotation.x *= 0.8;
+        playerParts.armL.rotation.x *= 0.8;
+        playerParts.armR.rotation.x *= 0.8;
+      }
+
+      const groundY = Math.max(-0.5, getTerrainHeight(playerGroup.position.x, playerGroup.position.z));
+      playerVelY -= 0.014;
+      playerGroup.position.y += playerVelY;
+      if (playerGroup.position.y <= groundY) {
+        playerGroup.position.y = groundY; playerVelY = 0; onGround = true;
+      }
+
+      updateZoneAndCompass();
+
+      // Moedas do PIB
+      coinMeshes.forEach(c => {
+        if (c.collected) return;
+        if (playerGroup.position.distanceTo(c.mesh.position) < 1.8) {
+          c.collected = true; c.mesh.visible = false;
+          state.score += 25; updateHUD(); SoundFX.coin();
+          spawnConfetti(c.mesh.position, 0xfacc15, 10);
+          showToast('+25 XP (Moeda do PIB Sudeste!)');
+        }
+      });
+
+      // Proximidade com estações e NPC Professor CCM
+      nearestStation = null;
+      let minDist = 4.4;
+      stationMeshes.forEach(sm => {
+        const d = Math.hypot(playerGroup.position.x - sm.data.x, playerGroup.position.z - sm.data.z);
+        if (d < minDist) { minDist = d; nearestStation = sm; }
+      });
+
+      const npcDist = Math.hypot(playerGroup.position.x - NPC_POS.x, playerGroup.position.z - NPC_POS.z);
+      nearNPC = !nearestStation && npcDist < 3.6;
+
+      if (npcGroup) npcGroup.lookAt(playerGroup.position.x, npcGroup.position.y, playerGroup.position.z);
+
+      const interactBtn = document.getElementById('interact-btn');
+      if (nearestStation) {
+        interactBtn.style.display = 'block';
+        interactBtn.textContent = state.completed.has(nearestStation.data.id)
+          ? `📖 Rever: ${nearestStation.data.title}`
+          : `📚 Estudar: ${nearestStation.data.title}`;
+      } else if (nearNPC) {
+        interactBtn.style.display = 'block';
+        interactBtn.textContent = '👨‍🏫 Conversar com Professor CCM';
+      } else {
+        interactBtn.style.display = 'none';
+      }
+    }
+
+    const targetLook = new THREE.Vector3(playerGroup.position.x, playerGroup.position.y + 1.8, playerGroup.position.z);
+    const camOffset = new THREE.Vector3(
+      Math.sin(camYaw) * Math.cos(camPitch) * camDist,
+      Math.sin(camPitch) * camDist,
+      Math.cos(camYaw) * Math.cos(camPitch) * camDist
+    );
+    camera.position.lerp(targetLook.clone().add(camOffset), 0.14);
+    camera.lookAt(targetLook);
+
+    updateWorldLabels();
+    renderer.render(scene, camera);
+  }
+
+  function updateWorldLabels() {
+    const w = window.innerWidth, h = window.innerHeight;
+    labelElements.forEach(item => {
+      if (!state.started) { item.el.style.display = 'none'; return; }
+      const distToCam = camera.position.distanceTo(item.pos);
+      if (distToCam > 78 && item.stationId) { item.el.style.display = 'none'; return; }
+      const proj = item.pos.clone().project(camera);
+      if (proj.z > 1) { item.el.style.display = 'none'; return; }
+      const x = (proj.x * 0.5 + 0.5) * w;
+      const y = (-proj.y * 0.5 + 0.5) * h;
+      if (x < -90 || x > w + 90 || y < -40 || y > h + 40) {
+        item.el.style.display = 'none';
+      } else {
+        item.el.style.display = 'block';
+        item.el.style.left = `${x}px`;
+        item.el.style.top = `${y}px`;
+        item.el.style.opacity = distToCam > 55 ? '0.55' : '1';
+      }
+    });
+  }
+
+  if (typeof THREE !== 'undefined') initApp();
+  </script>
+</body>
+</html>
